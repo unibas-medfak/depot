@@ -69,7 +69,19 @@ public class ApiControllerTests {
         assertNotNull(validRegisterResponse.getBody());
 
         var referenceBytes = IOUtils.resourceToByteArray("/qr.png");
-        assertArrayEquals(referenceBytes, validRegisterResponse.getBody());
+        var actualBytes = validRegisterResponse.getBody();
+
+        log.error("referenceBytes {}={} {}={} {}={}",
+                referenceBytes.length - 2, referenceBytes[referenceBytes.length - 3],
+                referenceBytes.length - 1, referenceBytes[referenceBytes.length - 2],
+                referenceBytes.length, referenceBytes[referenceBytes.length - 1]);
+
+        log.error("actualBytes {}={} {}={} {}={}",
+                actualBytes.length - 2, actualBytes[actualBytes.length - 3],
+                actualBytes.length - 1, actualBytes[actualBytes.length - 2],
+                actualBytes.length, actualBytes[actualBytes.length - 1]);
+
+        assertArrayEquals(referenceBytes, actualBytes);
     }
 
     @Test
