@@ -21,7 +21,10 @@ import org.springframework.util.LinkedMultiValueMap;
 import org.springframework.util.MultiValueMap;
 import org.springframework.util.StreamUtils;
 
+import javax.imageio.ImageIO;
+import java.awt.image.BufferedImage;
 import java.io.BufferedOutputStream;
+import java.io.ByteArrayInputStream;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.nio.file.Files;
@@ -69,21 +72,30 @@ public class ApiControllerTests {
         assertNotNull(validRegisterResponse.getBody());
 
         var referenceBytes = IOUtils.resourceToByteArray("/qr.png");
+        var referenceBytesStream = new ByteArrayInputStream(referenceBytes);
         var actualBytes = validRegisterResponse.getBody();
+        var actualBytesStream = new ByteArrayInputStream(actualBytes);
 
-        log.error("referenceBytes 1={} 2={} {}={} {}={}",
-                referenceBytes[0],
-                referenceBytes[1],
-                referenceBytes.length - 1, referenceBytes[referenceBytes.length - 2],
-                referenceBytes.length, referenceBytes[referenceBytes.length - 1]);
+        var referenceImage = ImageIO.read(referenceBytesStream);
+        var actualImage = ImageIO.read(actualBytesStream);
 
-        log.error("actualBytes 1={} 2={} {}={} {}={}",
-                actualBytes[0],
-                actualBytes[1],
-                actualBytes.length - 1, actualBytes[actualBytes.length - 2],
-                actualBytes.length, actualBytes[actualBytes.length - 1]);
+        assertTrue(imagesEqual(referenceImage, actualImage));
+    }
 
-        assertArrayEquals(referenceBytes, actualBytes);
+    public boolean imagesEqual(BufferedImage reference, BufferedImage actual) {
+        int width = reference.getWidth();
+        int height = reference.getHeight();
+
+        int[] referencePixels = reference.getRGB(0, 0, width, height, null, 0, width);
+        int[] actualPixels = actual.getRGB(0, 0, width, height, null, 0, width);
+
+        for (int i = 0; i < referencePixels.length; i++) {
+            if (referencePixels[i] != actualPixels[i]) {
+                return false;
+            }
+        }
+
+        return true;
     }
 
     @Test
