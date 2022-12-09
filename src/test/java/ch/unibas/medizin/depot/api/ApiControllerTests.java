@@ -71,13 +71,15 @@ public class ApiControllerTests {
         var referenceBytes = IOUtils.resourceToByteArray("/qr.png");
         var actualBytes = validRegisterResponse.getBody();
 
-        log.error("referenceBytes {}={} {}={} {}={}",
-                referenceBytes.length - 2, referenceBytes[referenceBytes.length - 3],
+        log.error("referenceBytes 1={} 2={} {}={} {}={}",
+                referenceBytes[0],
+                referenceBytes[1],
                 referenceBytes.length - 1, referenceBytes[referenceBytes.length - 2],
                 referenceBytes.length, referenceBytes[referenceBytes.length - 1]);
 
-        log.error("actualBytes {}={} {}={} {}={}",
-                actualBytes.length - 2, actualBytes[actualBytes.length - 3],
+        log.error("actualBytes 1={} 2={} {}={} {}={}",
+                actualBytes[0],
+                actualBytes[1],
                 actualBytes.length - 1, actualBytes[actualBytes.length - 2],
                 actualBytes.length, actualBytes[actualBytes.length - 1]);
 
