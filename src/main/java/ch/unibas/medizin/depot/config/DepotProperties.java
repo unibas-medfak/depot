@@ -8,6 +8,7 @@ import java.nio.file.Path;
 public record DepotProperties(
         Path baseDirectory,
         String adminPassword,
-        String jwtSecret
+        String jwtSecret,
+        String timeZone
 ) {
 }

@@ -12,6 +12,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
+import org.springframework.util.StringUtils;
 
 import javax.imageio.ImageIO;
 import java.awt.image.BufferedImage;
@@ -71,7 +72,8 @@ public class DefaultAccessTokenService implements AccessTokenService {
                 accessTokenRequestDto.mode(),
                 accessTokenRequestDto.expirationDate());
 
-        var expirationDate = accessTokenRequestDto.expirationDate().atStartOfDay().atZone(ZoneId.systemDefault()).toInstant();
+        var zoneId = StringUtils.hasText(depotProperties.timeZone()) ? ZoneId.of(depotProperties.timeZone()) : ZoneId.systemDefault();
+        var expirationDate = accessTokenRequestDto.expirationDate().atStartOfDay().atZone(zoneId).toInstant();
 
         return JWT.create()
                 .withIssuer("depot")
