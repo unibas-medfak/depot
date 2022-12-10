@@ -29,7 +29,7 @@ public class ApiController {
     @GetMapping("/list")
     @PreAuthorize("hasRole('READ')")
     @Operation(summary = "List all files and folders in the given path")
-    public ResponseEntity<List<FileDto>> list(@Parameter(description = "Path to be listed") @RequestParam("path") final String path) {
+    public ResponseEntity<List<FileDto>> list(@Parameter(description = "Path to be listed", example = "pictures/cats") @RequestParam("path") final String path) {
         if (!DepotUtil.validPath(path)) {
             return ResponseEntity.badRequest().build();
         }
@@ -40,7 +40,7 @@ public class ApiController {
     @GetMapping("/get")
     @PreAuthorize("hasRole('READ')")
     @Operation(summary = "Retrieve a file")
-    public Resource get(@Parameter(description = "File to be retrieved") @RequestParam("file") final String file) {
+    public Resource get(@Parameter(description = "Filename and Path to be retrieved", example = "pictures/cats/cat.png") @RequestParam("file") final String file) {
         if (!DepotUtil.validAbsolutPath(file)) {
             log.error("Access denied for request of file {}", file);
             return null;
@@ -53,8 +53,8 @@ public class ApiController {
     @PreAuthorize("hasRole('WRITE')")
     @Operation(summary = "Store a file")
     public ResponseEntity<PutFileResponseDto> put(@Parameter(description = "Multipart file to be stored") @RequestParam("file") final MultipartFile file,
-                                                  @Parameter(description = "Path where the file will be stored") @RequestParam final String path,
-                                                  @Parameter(description = "Whether the response shall contain a SHA256 hash of the stored data") @RequestParam(required = false) final boolean hash) {
+                                                  @Parameter(description = "Path where the file will be stored", example = "pictures/cats") @RequestParam final String path,
+                                                  @Parameter(description = "Whether the response shall contain a SHA256 hash of the stored data", example = "true") @RequestParam(required = false) final boolean hash) {
         if (!DepotUtil.validPath(path)) {
             return ResponseEntity.badRequest().build();
         }
