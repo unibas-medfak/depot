@@ -29,7 +29,6 @@ import java.nio.file.StandardOpenOption;
 import java.time.LocalDate;
 import java.time.temporal.ChronoUnit;
 import java.util.Arrays;
-import java.util.Objects;
 import java.util.Random;
 
 import static org.junit.jupiter.api.Assertions.*;
@@ -57,15 +56,29 @@ public class ApiControllerTests {
         var validRegisterRequest = new HttpEntity<>(new AccessTokenRequestDto("admin_secret", "re_al-m1", "subject1", "r", tomorrow));
         var validRegisterResponse = restTemplate.postForEntity(baseUrl + port + "/admin/register", validRegisterRequest, AccessTokenResponseDto.class);
         assertEquals(HttpStatus.OK, validRegisterResponse.getStatusCode());
-        assertNotNull(Objects.requireNonNull(validRegisterResponse.getBody()).token());
+        assertNotNull(validRegisterResponse.getBody());
+        assertNotNull(validRegisterResponse.getBody().token());
+    }
+
+    @Test
+    @SneakyThrows
+    public void Request_token() {
+        var validRegisterRequest = new HttpEntity<>(new AccessTokenRequestDto("admin_secret", "re_al-m1", "subject1", "r", LocalDate.of(2037, 11, 13)));
+        var validRegisterResponse = restTemplate.postForEntity(baseUrl + port + "/admin/register", validRegisterRequest, AccessTokenResponseDto.class);
+        assertEquals(HttpStatus.OK, validRegisterResponse.getStatusCode());
+
+        assertNotNull(validRegisterResponse.getBody());
+        var referenceToken = "eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJtb2RlIjoiciIsInN1YiI6InN1YmplY3QxIiwiaXNzIjoiZGVwb3QiLCJyZWFsbSI6InJlX2FsLW0xIiwiZXhwIjoyMTQxNjgzMjAwfQ.16258Z4X6lb4FUgNI-djrkLxDLuSlsT8kE0Lvhf3gso";
+        assertEquals(referenceToken, validRegisterResponse.getBody().token());
     }
 
     @Test
     @SneakyThrows
     public void Request_token_qr() {
-        var validRegisterRequest = new HttpEntity<>(new AccessTokenRequestDto("admin_secret", "re_al-m1", "subject1", "r", LocalDate.of(2050, 12, 31)));
+        var validRegisterRequest = new HttpEntity<>(new AccessTokenRequestDto("admin_secret", "re_al-m2", "subject2", "w", LocalDate.of(2050, 12, 31)));
         var validRegisterResponse = restTemplate.postForEntity(baseUrl + port + "/admin/qr", validRegisterRequest, byte[].class);
         assertEquals(HttpStatus.OK, validRegisterResponse.getStatusCode());
+
         assertNotNull(validRegisterResponse.getBody());
 
         var referenceBytes = IOUtils.resourceToByteArray("/qr.png");
@@ -113,8 +126,8 @@ public class ApiControllerTests {
         var todayRegisterRequest = new HttpEntity<>(new AccessTokenRequestDto("admin_secret", "realm", "subject", "r", today));
         var todayRegisterResponse = restTemplate.postForEntity(baseUrl + port + "/admin/register", todayRegisterRequest, AccessTokenResponseDto.class);
         assertEquals(HttpStatus.OK, todayRegisterResponse.getStatusCode());
-
-        var headers = getHeaders(Objects.requireNonNull(todayRegisterResponse.getBody()).token());
+        assertNotNull(todayRegisterResponse.getBody());
+        var headers = getHeaders(todayRegisterResponse.getBody().token());
         headers.setContentType(MediaType.APPLICATION_JSON);
         var listRequest = new HttpEntity<>(headers);
         var files = restTemplate.exchange(baseUrl + port + "/list?path=///test//a", HttpMethod.GET, listRequest, FileDto[].class);
@@ -130,7 +143,8 @@ public class ApiControllerTests {
         var registerRequest = new HttpEntity<>(new AccessTokenRequestDto("admin_secret", "realm", "subject", "rw", tomorrow));
         var registerResponse = restTemplate.postForEntity(baseUrl + port + "/admin/register", registerRequest, AccessTokenResponseDto.class);
 
-        var headers = getHeaders(Objects.requireNonNull(registerResponse.getBody()).token());
+        assertNotNull(registerResponse.getBody());
+        var headers = getHeaders(registerResponse.getBody().token());
         headers.setContentType(MediaType.MULTIPART_FORM_DATA);
 
         var body = new LinkedMultiValueMap<String, Object>();
@@ -143,12 +157,14 @@ public class ApiControllerTests {
         var serverUrl = baseUrl + port + "/put?path=//test/a//&hash=true";
         var response = restTemplate.postForEntity(serverUrl, requestEntity, PutFileResponseDto.class);
 
-        assertEquals(fileSize, Objects.requireNonNull(response.getBody()).bytes());
+        assertNotNull(response.getBody());
+        assertEquals(fileSize,response.getBody().bytes());
 
         serverUrl = baseUrl + port + "/put?path=//test/a/b/&hash=false";
         response = restTemplate.postForEntity(serverUrl, requestEntity, PutFileResponseDto.class);
 
-        assertEquals(fileSize, Objects.requireNonNull(response.getBody()).bytes());
+        assertNotNull(response.getBody());
+        assertEquals(fileSize, response.getBody().bytes());
 
         headers.setContentType(MediaType.APPLICATION_JSON);
         var listRequest = new HttpEntity<>(headers);
@@ -171,7 +187,8 @@ public class ApiControllerTests {
         var registerRequest = new HttpEntity<>(new AccessTokenRequestDto("admin_secret", "realm", "subject", "r", tomorrow));
         var registerResponse = restTemplate.postForEntity(baseUrl + port + "/admin/register", registerRequest, AccessTokenResponseDto.class);
 
-        var headers = getHeaders(Objects.requireNonNull(registerResponse.getBody()).token());
+        assertNotNull(registerResponse.getBody());
+        var headers = getHeaders(registerResponse.getBody().token());
         headers.setContentType(MediaType.MULTIPART_FORM_DATA);
 
         var body = new LinkedMultiValueMap<String, Object>();
@@ -193,7 +210,8 @@ public class ApiControllerTests {
         var registerRequest = new HttpEntity<>(new AccessTokenRequestDto("admin_secret", "realm", "subject", "rw", tomorrow));
         var registerResponse = restTemplate.postForEntity(baseUrl + port + "/admin/register", registerRequest, AccessTokenResponseDto.class);
 
-        var headers = getHeaders(Objects.requireNonNull(registerResponse.getBody()).token());
+        assertNotNull(registerResponse.getBody());
+        var headers = getHeaders(registerResponse.getBody().token());
         headers.setContentType(MediaType.MULTIPART_FORM_DATA);
 
         var body = new LinkedMultiValueMap<String, Object>();
@@ -206,7 +224,8 @@ public class ApiControllerTests {
         var serverUrl = baseUrl + port + "/put?path=//test/a//";
         var response = restTemplate.postForEntity(serverUrl, requestEntity, PutFileResponseDto.class);
 
-        assertEquals(fileSize, Objects.requireNonNull(response.getBody()).bytes());
+        assertNotNull(response.getBody());
+        assertEquals(fileSize, response.getBody().bytes());
 
         var getUrl = baseUrl + port + "/get?file=/test/a/" + randomFile.getName();
 
@@ -227,7 +246,8 @@ public class ApiControllerTests {
         var registerRequest = new HttpEntity<>(new AccessTokenRequestDto("admin_secret", "realm", "subject", "rw", tomorrow));
         var registerResponse = restTemplate.postForEntity(baseUrl + port + "/admin/register", registerRequest, AccessTokenResponseDto.class);
 
-        var headers = getHeaders(Objects.requireNonNull(registerResponse.getBody()).token());
+        assertNotNull(registerResponse.getBody());
+        var headers = getHeaders(registerResponse.getBody().token());
         headers.setContentType(MediaType.MULTIPART_FORM_DATA);
 
         var body = new LinkedMultiValueMap<String, Object>();
@@ -241,7 +261,8 @@ public class ApiControllerTests {
         var serverUrl = baseUrl + port + "/put?path=//test/a//&hash=true";
         var response = restTemplate.postForEntity(serverUrl, requestEntity, PutFileResponseDto.class);
 
-        assertEquals(fileSize, Objects.requireNonNull(response.getBody()).bytes());
+        assertNotNull(response.getBody());
+        assertEquals(fileSize, response.getBody().bytes());
 
         var getUrl = baseUrl + port + "/get?file=/test/a/" + randomFile.getName();
 
@@ -276,7 +297,8 @@ public class ApiControllerTests {
         var registerRequest = new HttpEntity<>(new AccessTokenRequestDto("admin_secret", "realm", "subject", "w", tomorrow));
         var registerResponse = restTemplate.postForEntity(baseUrl + port + "/admin/register", registerRequest, AccessTokenResponseDto.class);
 
-        var headers = getHeaders(Objects.requireNonNull(registerResponse.getBody()).token());
+        assertNotNull(registerResponse.getBody());
+        var headers = getHeaders(registerResponse.getBody().token());
 
         var requestEntity = new HttpEntity<Void>(headers);
 
@@ -292,7 +314,8 @@ public class ApiControllerTests {
         var registerRequest = new HttpEntity<>(new AccessTokenRequestDto("admin_secret", "realm", "subject", "w", tomorrow));
         var registerResponse = restTemplate.postForEntity(baseUrl + port + "/admin/register", registerRequest, AccessTokenResponseDto.class);
 
-        var headers = getHeaders(Objects.requireNonNull(registerResponse.getBody()).token());
+        assertNotNull(registerResponse.getBody());
+        var headers = getHeaders(registerResponse.getBody().token());
 
         var requestEntity = new HttpEntity<Void>(headers);
 
