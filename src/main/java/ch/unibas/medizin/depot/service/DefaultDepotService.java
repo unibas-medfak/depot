@@ -36,7 +36,7 @@ public class DefaultDepotService implements DepotService {
             Files.createDirectories(depotProperties.baseDirectory());
         } catch (IOException e) {
             log.error("Error", e);
-            throw new RuntimeException("Could not initialize folder for upload!");
+            throw new RuntimeException("Could not initialize base directory");
         }
     }
 
