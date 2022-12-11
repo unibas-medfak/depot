@@ -7,4 +7,5 @@ public interface LogService {
     }
 
     void log(EventType type, String subject, String description);
+
 }

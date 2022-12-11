@@ -54,7 +54,7 @@ public class DefaultDepotService implements DepotService {
         try (var fileList = Files.list(fullPath)) {
             fileList.forEach(entry -> entries.add(new FileDto(entry.getFileName().toString(), Files.isDirectory(entry) ? FileDto.FileType.FOLDER : FileDto.FileType.FILE)));
         } catch (IOException e) {
-            e.printStackTrace();
+            log.info("No such path {}", fullPath);
         }
 
         return entries;

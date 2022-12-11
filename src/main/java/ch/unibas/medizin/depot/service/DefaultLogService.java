@@ -7,10 +7,9 @@ import ch.qos.logback.classic.encoder.PatternLayoutEncoder;
 import ch.qos.logback.classic.spi.ILoggingEvent;
 import ch.qos.logback.core.FileAppender;
 import ch.unibas.medizin.depot.config.DepotProperties;
+import ch.unibas.medizin.depot.util.DepotUtil;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
-
-import java.io.File;
 
 @Service
 public class DefaultLogService implements LogService {
@@ -25,7 +24,8 @@ public class DefaultLogService implements LogService {
         patternLayoutEncoder.start();
 
         var fileAppender = new FileAppender<ILoggingEvent>();
-        fileAppender.setFile(depotProperties.baseDirectory() + File.separator + "depot-access.log");
+        var logfile = depotProperties.baseDirectory().resolve(DepotUtil.LOGFILE_NAME).toString();
+        fileAppender.setFile(logfile);
         fileAppender.setEncoder(patternLayoutEncoder);
         fileAppender.setContext(loggerContext);
         fileAppender.start();
