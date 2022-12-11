@@ -1,10 +1,7 @@
 package ch.unibas.medizin.depot.api;
 
 import ch.unibas.medizin.depot.config.DepotProperties;
-import ch.unibas.medizin.depot.dto.AccessTokenResponseDto;
-import ch.unibas.medizin.depot.dto.FileDto;
-import ch.unibas.medizin.depot.dto.AccessTokenRequestDto;
-import ch.unibas.medizin.depot.dto.PutFileResponseDto;
+import ch.unibas.medizin.depot.dto.*;
 import lombok.SneakyThrows;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.io.FileUtils;
@@ -29,6 +26,7 @@ import java.nio.file.StandardOpenOption;
 import java.time.LocalDate;
 import java.time.temporal.ChronoUnit;
 import java.util.Arrays;
+import java.util.List;
 import java.util.Random;
 
 import static org.junit.jupiter.api.Assertions.*;
@@ -138,7 +136,7 @@ public class ApiControllerTests {
     @Test
     @SneakyThrows
     public void Put_file() {
-        FileUtils.deleteDirectory(depotProperties.baseDirectory().toFile());
+        FileUtils.deleteDirectory(depotProperties.baseDirectory().resolve("realm").toFile());
 
         var registerRequest = new HttpEntity<>(new AccessTokenRequestDto("admin_secret", "realm", "subject", "rw", tomorrow));
         var registerResponse = restTemplate.postForEntity(baseUrl + port + "/admin/register", registerRequest, AccessTokenResponseDto.class);
@@ -154,13 +152,13 @@ public class ApiControllerTests {
         body.add("file", resource);
 
         var requestEntity = new HttpEntity<MultiValueMap<String, Object>>(body, headers);
-        var serverUrl = baseUrl + port + "/put?path=//test/a//&hash=true";
+        var serverUrl = baseUrl + port + "/put?path=//test/findMe//&hash=true";
         var response = restTemplate.postForEntity(serverUrl, requestEntity, PutFileResponseDto.class);
 
         assertNotNull(response.getBody());
         assertEquals(fileSize,response.getBody().bytes());
 
-        serverUrl = baseUrl + port + "/put?path=//test/a/b/&hash=false";
+        serverUrl = baseUrl + port + "/put?path=//test/findMe/b/&hash=false";
         response = restTemplate.postForEntity(serverUrl, requestEntity, PutFileResponseDto.class);
 
         assertNotNull(response.getBody());
@@ -168,11 +166,9 @@ public class ApiControllerTests {
 
         headers.setContentType(MediaType.APPLICATION_JSON);
         var listRequest = new HttpEntity<>(headers);
-        var files = restTemplate.exchange(baseUrl + port + "/list?path=///test//a", HttpMethod.GET, listRequest, FileDto[].class);
-
-        var listBody = files.getBody();
-
-        assert listBody != null;
+        var listResponse = restTemplate.exchange(baseUrl + port + "/list?path=///test//findMe", HttpMethod.GET, listRequest, FileDto[].class);
+        var listBody = listResponse.getBody();
+        assertNotNull(listBody);
         assertEquals(2, listBody.length);
 
         var folderEntry = Arrays.stream(listBody).filter(a -> a.type().equals(FileDto.FileType.FOLDER)).findFirst().orElseThrow();
@@ -180,6 +176,13 @@ public class ApiControllerTests {
 
         var fileEntry = Arrays.stream(listBody).filter(a -> a.type().equals(FileDto.FileType.FILE)).findFirst().orElseThrow();
         assertEquals(randomFile.getName(), fileEntry.name());
+
+        var logRequest = new HttpEntity<>(new LogRequestDto("admin_secret"));
+        var logResponse = restTemplate.postForEntity(baseUrl + port + "/admin/log", logRequest, String[].class);
+        var logBody = logResponse.getBody();
+        assertNotNull(logBody);
+        var findMe = Arrays.stream(logBody).filter(a -> a.contains("findMe")).findFirst().orElseThrow();
+        assertNotNull(findMe);
     }
 
     @Test
