@@ -5,6 +5,8 @@ import java.nio.file.Paths;
 
 public class DepotUtil {
 
+    public static final String LOGFILE_NAME = "depot-access.log";
+
     public static Path normalizePath(String path) {
         path = path.replaceAll(" ", "");
 

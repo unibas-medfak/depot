@@ -28,6 +28,8 @@ public class DefaultAccessTokenService implements AccessTokenService {
 
     private final PasswordEncoder passwordEncoder;
 
+    private final LogService logService;
+
     @Override
     public AccessTokenResponseDto requestTokenString(AccessTokenRequestDto accessTokenRequestDto) {
         var token = getToken(accessTokenRequestDto);
@@ -71,6 +73,9 @@ public class DefaultAccessTokenService implements AccessTokenService {
                 accessTokenRequestDto.subject(),
                 accessTokenRequestDto.mode(),
                 accessTokenRequestDto.expirationDate());
+
+        var logString = String.format("%s %s %s", accessTokenRequestDto.realm(), accessTokenRequestDto.mode(), accessTokenRequestDto.expirationDate());
+        logService.log(LogService.EventType.TOKEN, accessTokenRequestDto.subject(), logString);
 
         var zoneId = StringUtils.hasText(depotProperties.timeZone()) ? ZoneId.of(depotProperties.timeZone()) : ZoneId.systemDefault();
         var expirationDate = accessTokenRequestDto.expirationDate().atStartOfDay().atZone(zoneId).toInstant();
