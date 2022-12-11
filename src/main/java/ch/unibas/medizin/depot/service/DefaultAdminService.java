@@ -36,7 +36,7 @@ public class DefaultAdminService implements AdminService {
 
         var lastLogLines  = new ArrayList<String>();
 
-        var maxNumberOfLinesToRead = 20;
+        var maxNumberOfLinesToRead = 100;
         var logfile = depotProperties.baseDirectory().resolve(DepotUtil.LOGFILE_NAME).toString();
 
         try (ReversedLinesFileReader reader = new ReversedLinesFileReader(new File(logfile), StandardCharsets.UTF_8)) {
