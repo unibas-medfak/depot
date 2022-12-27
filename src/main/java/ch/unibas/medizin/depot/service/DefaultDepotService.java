@@ -16,10 +16,7 @@ import org.springframework.util.StringUtils;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.io.IOException;
-import java.nio.file.CopyOption;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.nio.file.StandardCopyOption;
+import java.nio.file.*;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Objects;
@@ -95,8 +92,11 @@ public class DefaultDepotService implements DepotService {
         logService.log(LogService.EventType.PUT, basePathAndSubject.subject(), fullPathAndFile.toString());
         log.info("{} put {}", basePathAndSubject.subject(), fullPathAndFile);
 
+        // TODO: Handle file / folder name clash
         try {
             Files.createDirectories(fullPath);
+        } catch (FileAlreadyExistsException e) {
+            log.debug("Folder {} already exists", fullPath);
         } catch (IOException e) {
             log.error("Could not initialize folder for upload", e);
             throw new RuntimeException("Could not initialize folder for upload!");

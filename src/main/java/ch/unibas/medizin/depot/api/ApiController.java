@@ -26,6 +26,7 @@ import java.util.List;
 public class ApiController {
 
     private static final Logger log = LoggerFactory.getLogger(ApiController.class);
+
     private final DepotService depotService;
 
     public ApiController(DepotService depotService) {
@@ -65,7 +66,7 @@ public class ApiController {
             return ResponseEntity.badRequest().build();
         }
 
-        if (!DepotUtil.validFilename(file.getName())) {
+        if (!DepotUtil.validFilename(file.getOriginalFilename())) {
             return ResponseEntity.badRequest().build();
         }
 

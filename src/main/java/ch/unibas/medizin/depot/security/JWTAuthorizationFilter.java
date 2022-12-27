@@ -23,6 +23,7 @@ import java.util.ArrayList;
 public class JWTAuthorizationFilter extends OncePerRequestFilter {
 
     private final String HEADER = "Authorization";
+
     private final String PREFIX = "Bearer ";
 
     private final JWTVerifier verifier;
@@ -63,7 +64,7 @@ public class JWTAuthorizationFilter extends OncePerRequestFilter {
     }
 
     private boolean checkJWTToken(HttpServletRequest httpServletRequest) {
-        String authenticationHeader = httpServletRequest.getHeader(HEADER);
+        var authenticationHeader = httpServletRequest.getHeader(HEADER);
         return authenticationHeader != null && authenticationHeader.startsWith(PREFIX);
     }
 }

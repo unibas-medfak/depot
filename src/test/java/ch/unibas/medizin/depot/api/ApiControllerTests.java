@@ -10,8 +10,10 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.web.client.TestRestTemplate;
 import org.springframework.boot.test.web.server.LocalServerPort;
+import org.springframework.core.io.ByteArrayResource;
 import org.springframework.core.io.FileSystemResource;
 import org.springframework.http.*;
+import org.springframework.mock.web.MockMultipartFile;
 import org.springframework.util.LinkedMultiValueMap;
 import org.springframework.util.MultiValueMap;
 import org.springframework.util.StreamUtils;
@@ -126,6 +128,36 @@ public class ApiControllerTests {
         var files = restTemplate.exchange(baseUrl + port + "/list?path=///test//a", HttpMethod.GET, listRequest, FileDto[].class);
 
         assertEquals(HttpStatus.FORBIDDEN, files.getStatusCode());
+    }
+
+    @Test
+    public void Deny_file_with_invalid_name() throws IOException {
+        FileUtils.deleteDirectory(depotProperties.baseDirectory().resolve("realm").toFile());
+
+        var registerRequest = new HttpEntity<>(new AccessTokenRequestDto("admin_secret", "realm", "subject", "rw", tomorrow));
+        var registerResponse = restTemplate.postForEntity(baseUrl + port + "/admin/register", registerRequest, AccessTokenResponseDto.class);
+
+        assertNotNull(registerResponse.getBody());
+        var headers = getHeaders(registerResponse.getBody().token());
+        headers.setContentType(MediaType.MULTIPART_FORM_DATA);
+
+        var body = new LinkedMultiValueMap<String, Object>();
+        var bytes = new byte[] { 1 };
+
+        var byteArrayResource = new ByteArrayResource(bytes) {
+            @Override
+            public String getFilename() {
+                return "/";
+            }
+        };
+
+        body.add("file", byteArrayResource);
+
+        var requestEntity = new HttpEntity<MultiValueMap<String, Object>>(body, headers);
+        var serverUrl = baseUrl + port + "/put?path=/test&hash=true";
+        var response = restTemplate.postForEntity(serverUrl, requestEntity, PutFileResponseDto.class);
+
+        assertEquals(HttpStatus.BAD_REQUEST, response.getStatusCode());
     }
 
     @Test
