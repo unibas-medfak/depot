@@ -3,9 +3,9 @@ package ch.unibas.medizin.depot.service;
 import ch.unibas.medizin.depot.config.DepotProperties;
 import ch.unibas.medizin.depot.dto.LogRequestDto;
 import ch.unibas.medizin.depot.util.DepotUtil;
-import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.io.input.ReversedLinesFileReader;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
@@ -16,14 +16,19 @@ import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.List;
 
-@Slf4j
 @Service
-@RequiredArgsConstructor
 public class DefaultAdminService implements AdminService {
+
+    private static final Logger log = LoggerFactory.getLogger(DefaultAdminService.class);
 
     private final DepotProperties depotProperties;
 
     private final PasswordEncoder passwordEncoder;
+
+    public DefaultAdminService(DepotProperties depotProperties, PasswordEncoder passwordEncoder) {
+        this.depotProperties = depotProperties;
+        this.passwordEncoder = passwordEncoder;
+    }
 
     @Override
     public List<String> getLastLogLines(LogRequestDto logRequestDto) {

@@ -2,8 +2,6 @@ package ch.unibas.medizin.depot.api;
 
 import ch.unibas.medizin.depot.config.DepotProperties;
 import ch.unibas.medizin.depot.dto.*;
-import lombok.SneakyThrows;
-import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.IOUtils;
 import org.junit.jupiter.api.Disabled;
@@ -21,17 +19,16 @@ import org.springframework.util.StreamUtils;
 import java.io.BufferedOutputStream;
 import java.io.File;
 import java.io.FileOutputStream;
+import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.StandardOpenOption;
 import java.time.LocalDate;
 import java.time.temporal.ChronoUnit;
 import java.util.Arrays;
-import java.util.List;
 import java.util.Random;
 
 import static org.junit.jupiter.api.Assertions.*;
 
-@Slf4j
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
 public class ApiControllerTests {
 
@@ -59,7 +56,6 @@ public class ApiControllerTests {
     }
 
     @Test
-    @SneakyThrows
     public void Request_token() {
         var validRegisterRequest = new HttpEntity<>(new AccessTokenRequestDto("admin_secret", "re_al-m1", "subject1", "r", LocalDate.of(2037, 11, 13)));
         var validRegisterResponse = restTemplate.postForEntity(baseUrl + port + "/admin/register", validRegisterRequest, AccessTokenResponseDto.class);
@@ -71,8 +67,7 @@ public class ApiControllerTests {
     }
 
     @Test
-    @SneakyThrows
-    public void Request_token_qr() {
+    public void Request_token_qr() throws IOException {
         var validRegisterRequest = new HttpEntity<>(new AccessTokenRequestDto("admin_secret", "re_al-m2", "subject2", "w", LocalDate.of(2050, 12, 31)));
         var validRegisterResponse = restTemplate.postForEntity(baseUrl + port + "/admin/qr", validRegisterRequest, byte[].class);
         assertEquals(HttpStatus.OK, validRegisterResponse.getStatusCode());
@@ -134,8 +129,7 @@ public class ApiControllerTests {
     }
 
     @Test
-    @SneakyThrows
-    public void Put_file() {
+    public void Put_file() throws IOException {
         FileUtils.deleteDirectory(depotProperties.baseDirectory().resolve("realm").toFile());
 
         var registerRequest = new HttpEntity<>(new AccessTokenRequestDto("admin_secret", "realm", "subject", "rw", tomorrow));
@@ -186,7 +180,7 @@ public class ApiControllerTests {
     }
 
     @Test
-    public void Deny_read_only_put() {
+    public void Deny_read_only_put() throws IOException {
         var registerRequest = new HttpEntity<>(new AccessTokenRequestDto("admin_secret", "realm", "subject", "r", tomorrow));
         var registerResponse = restTemplate.postForEntity(baseUrl + port + "/admin/register", registerRequest, AccessTokenResponseDto.class);
 
@@ -208,8 +202,7 @@ public class ApiControllerTests {
     }
 
     @Test
-    @SneakyThrows
-    public void Get_file() {
+    public void Get_file() throws IOException {
         var registerRequest = new HttpEntity<>(new AccessTokenRequestDto("admin_secret", "realm", "subject", "rw", tomorrow));
         var registerResponse = restTemplate.postForEntity(baseUrl + port + "/admin/register", registerRequest, AccessTokenResponseDto.class);
 
@@ -244,8 +237,7 @@ public class ApiControllerTests {
     }
 
     @Test
-    @SneakyThrows
-    public void Get_range_file() {
+    public void Get_range_file() throws IOException {
         var registerRequest = new HttpEntity<>(new AccessTokenRequestDto("admin_secret", "realm", "subject", "rw", tomorrow));
         var registerResponse = restTemplate.postForEntity(baseUrl + port + "/admin/register", registerRequest, AccessTokenResponseDto.class);
 
@@ -337,8 +329,7 @@ public class ApiControllerTests {
         return headers;
     }
 
-    @SneakyThrows
-    private File randomFile(int sizeInBytes) {
+    private File randomFile(int sizeInBytes) throws IOException {
         var randomFile = File.createTempFile("depot-", ".rand");
         randomFile.deleteOnExit();
 

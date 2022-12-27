@@ -4,9 +4,10 @@ import ch.unibas.medizin.depot.config.DepotProperties;
 import ch.unibas.medizin.depot.dto.FileDto;
 import ch.unibas.medizin.depot.dto.PutFileResponseDto;
 import ch.unibas.medizin.depot.util.DepotUtil;
-import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
+import jakarta.annotation.PostConstruct;
 import org.apache.commons.codec.digest.DigestUtils;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.core.io.FileSystemResource;
 import org.springframework.core.io.Resource;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -14,21 +15,28 @@ import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
 import org.springframework.web.multipart.MultipartFile;
 
-import jakarta.annotation.PostConstruct;
 import java.io.IOException;
-import java.nio.file.*;
+import java.nio.file.CopyOption;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.StandardCopyOption;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Objects;
 
-@Slf4j
 @Service
-@RequiredArgsConstructor
 public class DefaultDepotService implements DepotService {
+
+    private static final Logger log = LoggerFactory.getLogger(DefaultDepotService.class);
 
     private final DepotProperties depotProperties;
 
     private final LogService logService;
+
+    public DefaultDepotService(DepotProperties depotProperties, LogService logService) {
+        this.depotProperties = depotProperties;
+        this.logService = logService;
+    }
 
     @PostConstruct
     private void init() {
