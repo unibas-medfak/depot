@@ -1,7 +1,6 @@
 package ch.unibas.medizin.depot.config;
 
 import ch.unibas.medizin.depot.security.JWTAuthorizationFilter;
-import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.http.HttpMethod;
@@ -17,10 +16,13 @@ import org.springframework.security.web.authentication.UsernamePasswordAuthentic
 @Configuration
 @EnableWebSecurity
 @EnableMethodSecurity
-@RequiredArgsConstructor
 public class SecurityConfiguration {
 
     private final JWTAuthorizationFilter jwtAuthorizationFilter;
+
+    public SecurityConfiguration(JWTAuthorizationFilter jwtAuthorizationFilter) {
+        this.jwtAuthorizationFilter = jwtAuthorizationFilter;
+    }
 
     @Bean
     public PasswordEncoder encoder() {

@@ -2,8 +2,6 @@ package ch.unibas.medizin.depot.api;
 
 import ch.unibas.medizin.depot.config.DepotProperties;
 import ch.unibas.medizin.depot.dto.*;
-import lombok.SneakyThrows;
-import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.IOUtils;
 import org.junit.jupiter.api.Disabled;
@@ -12,6 +10,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.web.client.TestRestTemplate;
 import org.springframework.boot.test.web.server.LocalServerPort;
+import org.springframework.core.io.ByteArrayResource;
 import org.springframework.core.io.FileSystemResource;
 import org.springframework.http.*;
 import org.springframework.util.LinkedMultiValueMap;
@@ -21,17 +20,16 @@ import org.springframework.util.StreamUtils;
 import java.io.BufferedOutputStream;
 import java.io.File;
 import java.io.FileOutputStream;
+import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.StandardOpenOption;
 import java.time.LocalDate;
 import java.time.temporal.ChronoUnit;
 import java.util.Arrays;
-import java.util.List;
 import java.util.Random;
 
 import static org.junit.jupiter.api.Assertions.*;
 
-@Slf4j
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
 public class ApiControllerTests {
 
@@ -59,7 +57,6 @@ public class ApiControllerTests {
     }
 
     @Test
-    @SneakyThrows
     public void Request_token() {
         var validRegisterRequest = new HttpEntity<>(new AccessTokenRequestDto("admin_secret", "re_al-m1", "subject1", "r", LocalDate.of(2037, 11, 13)));
         var validRegisterResponse = restTemplate.postForEntity(baseUrl + port + "/admin/register", validRegisterRequest, AccessTokenResponseDto.class);
@@ -71,8 +68,7 @@ public class ApiControllerTests {
     }
 
     @Test
-    @SneakyThrows
-    public void Request_token_qr() {
+    public void Request_token_qr() throws IOException {
         var validRegisterRequest = new HttpEntity<>(new AccessTokenRequestDto("admin_secret", "re_al-m2", "subject2", "w", LocalDate.of(2050, 12, 31)));
         var validRegisterResponse = restTemplate.postForEntity(baseUrl + port + "/admin/qr", validRegisterRequest, byte[].class);
         assertEquals(HttpStatus.OK, validRegisterResponse.getStatusCode());
@@ -134,8 +130,125 @@ public class ApiControllerTests {
     }
 
     @Test
-    @SneakyThrows
-    public void Put_file() {
+    public void Deny_file_with_invalid_name() throws IOException {
+        FileUtils.deleteDirectory(depotProperties.baseDirectory().resolve("realm").toFile());
+
+        var registerRequest = new HttpEntity<>(new AccessTokenRequestDto("admin_secret", "realm", "subject", "rw", tomorrow));
+        var registerResponse = restTemplate.postForEntity(baseUrl + port + "/admin/register", registerRequest, AccessTokenResponseDto.class);
+
+        assertNotNull(registerResponse.getBody());
+        var headers = getHeaders(registerResponse.getBody().token());
+        headers.setContentType(MediaType.MULTIPART_FORM_DATA);
+
+        var body = new LinkedMultiValueMap<String, Object>();
+        var bytes = new byte[] { 1 };
+
+        var byteArrayResource = new ByteArrayResource(bytes) {
+            @Override
+            public String getFilename() {
+                return "/";
+            }
+        };
+
+        body.add("file", byteArrayResource);
+
+        var requestEntity = new HttpEntity<MultiValueMap<String, Object>>(body, headers);
+        var serverUrl = baseUrl + port + "/put?path=/test&hash=true";
+        var response = restTemplate.postForEntity(serverUrl, requestEntity, PutFileResponseDto.class);
+
+        assertEquals(HttpStatus.BAD_REQUEST, response.getStatusCode());
+    }
+
+    @Test
+    void Deny_write_file_to_folder_with_same_name() throws IOException {
+        FileUtils.deleteDirectory(depotProperties.baseDirectory().resolve("realm").toFile());
+
+        var registerRequest = new HttpEntity<>(new AccessTokenRequestDto("admin_secret", "realm", "subject", "rw", tomorrow));
+        var registerResponse = restTemplate.postForEntity(baseUrl + port + "/admin/register", registerRequest, AccessTokenResponseDto.class);
+
+        assertNotNull(registerResponse.getBody());
+        var headers = getHeaders(registerResponse.getBody().token());
+        headers.setContentType(MediaType.MULTIPART_FORM_DATA);
+
+        var bytes = new byte[] { 1 };
+
+        var folderBody = new LinkedMultiValueMap<String, Object>();
+        var folderByteArrayResource = new ByteArrayResource(bytes) {
+            @Override
+            public String getFilename() {
+                return "folder";
+            }
+        };
+        folderBody.add("file", folderByteArrayResource);
+
+        var requestEntity = new HttpEntity<MultiValueMap<String, Object>>(folderBody, headers);
+        var serverUrl = baseUrl + port + "/put?path=/&hash=true";
+        var response = restTemplate.postForEntity(serverUrl, requestEntity, PutFileResponseDto.class);
+
+        assertEquals(HttpStatus.OK, response.getStatusCode());
+
+        var fileBody = new LinkedMultiValueMap<String, Object>();
+        var fileByteArrayResource = new ByteArrayResource(bytes) {
+            @Override
+            public String getFilename() {
+                return "file.txt";
+            }
+        };
+        fileBody.add("file", fileByteArrayResource);
+
+        requestEntity = new HttpEntity<>(fileBody, headers);
+        serverUrl = baseUrl + port + "/put?path=/folder&hash=true";
+        response = restTemplate.postForEntity(serverUrl, requestEntity, PutFileResponseDto.class);
+
+        assertEquals(HttpStatus.BAD_REQUEST, response.getStatusCode());
+    }
+
+    @Test
+    void Deny_write_folder_to_file_with_same_name() throws IOException {
+        FileUtils.deleteDirectory(depotProperties.baseDirectory().resolve("realm").toFile());
+
+        var registerRequest = new HttpEntity<>(new AccessTokenRequestDto("admin_secret", "realm", "subject", "rw", tomorrow));
+        var registerResponse = restTemplate.postForEntity(baseUrl + port + "/admin/register", registerRequest, AccessTokenResponseDto.class);
+
+        assertNotNull(registerResponse.getBody());
+        var headers = getHeaders(registerResponse.getBody().token());
+        headers.setContentType(MediaType.MULTIPART_FORM_DATA);
+
+        var bytes = new byte[] { 1 };
+
+        var fileBody = new LinkedMultiValueMap<String, Object>();
+        var fileByteArrayResource = new ByteArrayResource(bytes) {
+            @Override
+            public String getFilename() {
+                return "file.txt";
+            }
+        };
+        fileBody.add("file", fileByteArrayResource);
+
+        var requestEntity = new HttpEntity<MultiValueMap<String, Object>>(fileBody, headers);
+        var serverUrl = baseUrl + port + "/put?path=/folder&hash=true";
+        var response = restTemplate.postForEntity(serverUrl, requestEntity, PutFileResponseDto.class);
+
+        assertEquals(HttpStatus.OK, response.getStatusCode());
+
+        var folderBody = new LinkedMultiValueMap<String, Object>();
+        var folderByteArrayResource = new ByteArrayResource(bytes) {
+            @Override
+            public String getFilename() {
+                return "folder";
+            }
+        };
+        folderBody.add("file", folderByteArrayResource);
+
+        requestEntity = new HttpEntity<>(folderBody, headers);
+        serverUrl = baseUrl + port + "/put?path=/&hash=true";
+        response = restTemplate.postForEntity(serverUrl, requestEntity, PutFileResponseDto.class);
+
+        assertEquals(HttpStatus.BAD_REQUEST, response.getStatusCode());
+    }
+
+    @Test
+    public void Put_file() throws IOException {
         FileUtils.deleteDirectory(depotProperties.baseDirectory().resolve("realm").toFile());
 
         var registerRequest = new HttpEntity<>(new AccessTokenRequestDto("admin_secret", "realm", "subject", "rw", tomorrow));
@@ -156,7 +269,7 @@ public class ApiControllerTests {
         var response = restTemplate.postForEntity(serverUrl, requestEntity, PutFileResponseDto.class);
 
         assertNotNull(response.getBody());
-        assertEquals(fileSize,response.getBody().bytes());
+        assertEquals(fileSize, response.getBody().bytes());
 
         serverUrl = baseUrl + port + "/put?path=//test/findMe/b/&hash=false";
         response = restTemplate.postForEntity(serverUrl, requestEntity, PutFileResponseDto.class);
@@ -186,7 +299,7 @@ public class ApiControllerTests {
     }
 
     @Test
-    public void Deny_read_only_put() {
+    public void Deny_read_only_put() throws IOException {
         var registerRequest = new HttpEntity<>(new AccessTokenRequestDto("admin_secret", "realm", "subject", "r", tomorrow));
         var registerResponse = restTemplate.postForEntity(baseUrl + port + "/admin/register", registerRequest, AccessTokenResponseDto.class);
 
@@ -208,8 +321,7 @@ public class ApiControllerTests {
     }
 
     @Test
-    @SneakyThrows
-    public void Get_file() {
+    public void Get_file() throws IOException {
         var registerRequest = new HttpEntity<>(new AccessTokenRequestDto("admin_secret", "realm", "subject", "rw", tomorrow));
         var registerResponse = restTemplate.postForEntity(baseUrl + port + "/admin/register", registerRequest, AccessTokenResponseDto.class);
 
@@ -244,8 +356,7 @@ public class ApiControllerTests {
     }
 
     @Test
-    @SneakyThrows
-    public void Get_range_file() {
+    public void Get_range_file() throws IOException {
         var registerRequest = new HttpEntity<>(new AccessTokenRequestDto("admin_secret", "realm", "subject", "rw", tomorrow));
         var registerResponse = restTemplate.postForEntity(baseUrl + port + "/admin/register", registerRequest, AccessTokenResponseDto.class);
 
@@ -337,8 +448,7 @@ public class ApiControllerTests {
         return headers;
     }
 
-    @SneakyThrows
-    private File randomFile(int sizeInBytes) {
+    private File randomFile(int sizeInBytes) throws IOException {
         var randomFile = File.createTempFile("depot-", ".rand");
         randomFile.deleteOnExit();
 

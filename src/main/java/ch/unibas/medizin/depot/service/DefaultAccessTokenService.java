@@ -6,9 +6,8 @@ import ch.unibas.medizin.depot.dto.AccessTokenResponseDto;
 import com.auth0.jwt.JWT;
 import com.auth0.jwt.algorithms.Algorithm;
 import io.nayuki.qrcodegen.QrCode;
-import lombok.RequiredArgsConstructor;
-import lombok.SneakyThrows;
-import lombok.extern.slf4j.Slf4j;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
@@ -17,18 +16,25 @@ import org.springframework.util.StringUtils;
 import javax.imageio.ImageIO;
 import java.awt.image.BufferedImage;
 import java.io.ByteArrayOutputStream;
+import java.io.IOException;
 import java.time.ZoneId;
 
-@Slf4j
 @Service
-@RequiredArgsConstructor
 public class DefaultAccessTokenService implements AccessTokenService {
+
+    private static final Logger log = LoggerFactory.getLogger(DefaultAccessTokenService.class);
 
     private final DepotProperties depotProperties;
 
     private final PasswordEncoder passwordEncoder;
 
     private final LogService logService;
+
+    public DefaultAccessTokenService(DepotProperties depotProperties, PasswordEncoder passwordEncoder, LogService logService) {
+        this.depotProperties = depotProperties;
+        this.passwordEncoder = passwordEncoder;
+        this.logService = logService;
+    }
 
     @Override
     public AccessTokenResponseDto requestTokenString(AccessTokenRequestDto accessTokenRequestDto) {
@@ -43,7 +49,6 @@ public class DefaultAccessTokenService implements AccessTokenService {
         return toImage(qrCode);
     }
 
-    @SneakyThrows
     private byte[] toImage(QrCode qr) {
         var scale = 4;
         var border = 10;
@@ -57,7 +62,11 @@ public class DefaultAccessTokenService implements AccessTokenService {
         }
 
         var byteArrayOutputStream = new ByteArrayOutputStream();
-        ImageIO.write(result, "png", byteArrayOutputStream);
+        try {
+            ImageIO.write(result, "png", byteArrayOutputStream);
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
 
         return byteArrayOutputStream.toByteArray();
     }

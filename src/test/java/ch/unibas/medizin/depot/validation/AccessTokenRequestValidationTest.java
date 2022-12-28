@@ -1,19 +1,16 @@
 package ch.unibas.medizin.depot.validation;
 
 import ch.unibas.medizin.depot.dto.AccessTokenRequestDto;
-import lombok.extern.slf4j.Slf4j;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
-
 import jakarta.validation.Validation;
 import jakarta.validation.Validator;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
 import java.time.LocalDate;
 
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-@Slf4j
 public class AccessTokenRequestValidationTest {
 
     private Validator validator;
