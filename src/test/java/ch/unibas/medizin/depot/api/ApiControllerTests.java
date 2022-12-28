@@ -13,7 +13,6 @@ import org.springframework.boot.test.web.server.LocalServerPort;
 import org.springframework.core.io.ByteArrayResource;
 import org.springframework.core.io.FileSystemResource;
 import org.springframework.http.*;
-import org.springframework.mock.web.MockMultipartFile;
 import org.springframework.util.LinkedMultiValueMap;
 import org.springframework.util.MultiValueMap;
 import org.springframework.util.StreamUtils;
@@ -156,6 +155,94 @@ public class ApiControllerTests {
         var requestEntity = new HttpEntity<MultiValueMap<String, Object>>(body, headers);
         var serverUrl = baseUrl + port + "/put?path=/test&hash=true";
         var response = restTemplate.postForEntity(serverUrl, requestEntity, PutFileResponseDto.class);
+
+        assertEquals(HttpStatus.BAD_REQUEST, response.getStatusCode());
+    }
+
+    @Test
+    void Deny_write_file_to_folder_with_same_name() throws IOException {
+        FileUtils.deleteDirectory(depotProperties.baseDirectory().resolve("realm").toFile());
+
+        var registerRequest = new HttpEntity<>(new AccessTokenRequestDto("admin_secret", "realm", "subject", "rw", tomorrow));
+        var registerResponse = restTemplate.postForEntity(baseUrl + port + "/admin/register", registerRequest, AccessTokenResponseDto.class);
+
+        assertNotNull(registerResponse.getBody());
+        var headers = getHeaders(registerResponse.getBody().token());
+        headers.setContentType(MediaType.MULTIPART_FORM_DATA);
+
+        var bytes = new byte[] { 1 };
+
+        var folderBody = new LinkedMultiValueMap<String, Object>();
+        var folderByteArrayResource = new ByteArrayResource(bytes) {
+            @Override
+            public String getFilename() {
+                return "folder";
+            }
+        };
+        folderBody.add("file", folderByteArrayResource);
+
+        var requestEntity = new HttpEntity<MultiValueMap<String, Object>>(folderBody, headers);
+        var serverUrl = baseUrl + port + "/put?path=/&hash=true";
+        var response = restTemplate.postForEntity(serverUrl, requestEntity, PutFileResponseDto.class);
+
+        assertEquals(HttpStatus.OK, response.getStatusCode());
+
+        var fileBody = new LinkedMultiValueMap<String, Object>();
+        var fileByteArrayResource = new ByteArrayResource(bytes) {
+            @Override
+            public String getFilename() {
+                return "file.txt";
+            }
+        };
+        fileBody.add("file", fileByteArrayResource);
+
+        requestEntity = new HttpEntity<>(fileBody, headers);
+        serverUrl = baseUrl + port + "/put?path=/folder&hash=true";
+        response = restTemplate.postForEntity(serverUrl, requestEntity, PutFileResponseDto.class);
+
+        assertEquals(HttpStatus.BAD_REQUEST, response.getStatusCode());
+    }
+
+    @Test
+    void Deny_write_folder_to_file_with_same_name() throws IOException {
+        FileUtils.deleteDirectory(depotProperties.baseDirectory().resolve("realm").toFile());
+
+        var registerRequest = new HttpEntity<>(new AccessTokenRequestDto("admin_secret", "realm", "subject", "rw", tomorrow));
+        var registerResponse = restTemplate.postForEntity(baseUrl + port + "/admin/register", registerRequest, AccessTokenResponseDto.class);
+
+        assertNotNull(registerResponse.getBody());
+        var headers = getHeaders(registerResponse.getBody().token());
+        headers.setContentType(MediaType.MULTIPART_FORM_DATA);
+
+        var bytes = new byte[] { 1 };
+
+        var fileBody = new LinkedMultiValueMap<String, Object>();
+        var fileByteArrayResource = new ByteArrayResource(bytes) {
+            @Override
+            public String getFilename() {
+                return "file.txt";
+            }
+        };
+        fileBody.add("file", fileByteArrayResource);
+
+        var requestEntity = new HttpEntity<MultiValueMap<String, Object>>(fileBody, headers);
+        var serverUrl = baseUrl + port + "/put?path=/folder&hash=true";
+        var response = restTemplate.postForEntity(serverUrl, requestEntity, PutFileResponseDto.class);
+
+        assertEquals(HttpStatus.OK, response.getStatusCode());
+
+        var folderBody = new LinkedMultiValueMap<String, Object>();
+        var folderByteArrayResource = new ByteArrayResource(bytes) {
+            @Override
+            public String getFilename() {
+                return "folder";
+            }
+        };
+        folderBody.add("file", folderByteArrayResource);
+
+        requestEntity = new HttpEntity<>(folderBody, headers);
+        serverUrl = baseUrl + port + "/put?path=/&hash=true";
+        response = restTemplate.postForEntity(serverUrl, requestEntity, PutFileResponseDto.class);
 
         assertEquals(HttpStatus.BAD_REQUEST, response.getStatusCode());
     }

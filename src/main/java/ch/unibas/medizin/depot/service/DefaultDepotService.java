@@ -10,10 +10,12 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.core.io.FileSystemResource;
 import org.springframework.core.io.Resource;
+import org.springframework.http.HttpStatusCode;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
 import org.springframework.web.multipart.MultipartFile;
+import org.springframework.web.server.ResponseStatusException;
 
 import java.io.IOException;
 import java.nio.file.*;
@@ -92,7 +94,16 @@ public class DefaultDepotService implements DepotService {
         logService.log(LogService.EventType.PUT, basePathAndSubject.subject(), fullPathAndFile.toString());
         log.info("{} put {}", basePathAndSubject.subject(), fullPathAndFile);
 
-        // TODO: Handle file / folder name clash
+        if (Files.isRegularFile(fullPath)) {
+            log.error("Folder {} already exists as file", fullPath);
+            throw new ResponseStatusException(HttpStatusCode.valueOf(400), "Folder already exists as file");
+        }
+
+        if (Files.isDirectory(fullPathAndFile)) {
+            log.error("File {} already exists as folder", fullPathAndFile);
+            throw new ResponseStatusException(HttpStatusCode.valueOf(400), "File already exists as folder");
+        }
+
         try {
             Files.createDirectories(fullPath);
         } catch (FileAlreadyExistsException e) {

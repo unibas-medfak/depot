@@ -2,8 +2,6 @@ package ch.unibas.medizin.depot.service;
 
 import jakarta.annotation.PostConstruct;
 import org.junit.jupiter.api.Test;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.mock.web.MockMultipartFile;
@@ -15,8 +13,6 @@ import java.util.concurrent.Executors;
 
 @SpringBootTest
 public class DepotServiceTests {
-
-    private static final Logger log = LoggerFactory.getLogger(DepotServiceTests.class);
 
     @Autowired
     private DepotService depotService;
