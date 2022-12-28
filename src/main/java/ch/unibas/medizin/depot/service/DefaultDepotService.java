@@ -40,7 +40,7 @@ public class DefaultDepotService implements DepotService {
     @PostConstruct
     private void init() {
         try {
-            Files.createDirectories(depotProperties.baseDirectory());
+            Files.createDirectories(depotProperties.getBaseDirectory());
         } catch (IOException e) {
             log.error("Error", e);
             throw new RuntimeException("Could not initialize base directory");
@@ -140,7 +140,7 @@ public class DefaultDepotService implements DepotService {
         var realmAndSubject = StringUtils.split(authentication.getName(), String.valueOf(Character.LINE_SEPARATOR));
         assert realmAndSubject != null;
         var realm = realmAndSubject[0];
-        var rootAndRealmPath = depotProperties.baseDirectory().resolve(realm);
+        var rootAndRealmPath = depotProperties.getBaseDirectory().resolve(realm);
         return new BasePathAndSubject(rootAndRealmPath, realmAndSubject[1]);
     }
 

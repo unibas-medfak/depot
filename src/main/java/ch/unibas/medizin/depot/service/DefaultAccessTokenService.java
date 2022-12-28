@@ -8,8 +8,6 @@ import com.auth0.jwt.algorithms.Algorithm;
 import io.nayuki.qrcodegen.QrCode;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.security.access.AccessDeniedException;
-import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
 
@@ -26,13 +24,13 @@ public class DefaultAccessTokenService implements AccessTokenService {
 
     private final DepotProperties depotProperties;
 
-    private final PasswordEncoder passwordEncoder;
+    private final AuthorizationService authorizationService;
 
     private final LogService logService;
 
-    public DefaultAccessTokenService(DepotProperties depotProperties, PasswordEncoder passwordEncoder, LogService logService) {
+    public DefaultAccessTokenService(DepotProperties depotProperties, AuthorizationService authorizationService, LogService logService) {
         this.depotProperties = depotProperties;
-        this.passwordEncoder = passwordEncoder;
+        this.authorizationService = authorizationService;
         this.logService = logService;
     }
 
@@ -72,9 +70,8 @@ public class DefaultAccessTokenService implements AccessTokenService {
     }
 
     private String getToken(AccessTokenRequestDto accessTokenRequestDto) {
-        if (!passwordEncoder.matches(accessTokenRequestDto.password(), depotProperties.adminPassword())) {
-            log.error("Token request with invalid password");
-            throw new AccessDeniedException("invalid password");
+        if (authorizationService.adminPasswordMismatches(accessTokenRequestDto.password())) {
+            return "";
         }
 
         log.info("Token requested with realm={} subject={} mode={} expirationDate={}",
@@ -86,7 +83,7 @@ public class DefaultAccessTokenService implements AccessTokenService {
         var logString = String.format("%s %s %s", accessTokenRequestDto.realm(), accessTokenRequestDto.mode(), accessTokenRequestDto.expirationDate());
         logService.log(LogService.EventType.TOKEN, accessTokenRequestDto.subject(), logString);
 
-        var zoneId = StringUtils.hasText(depotProperties.timeZone()) ? ZoneId.of(depotProperties.timeZone()) : ZoneId.systemDefault();
+        var zoneId = StringUtils.hasText(depotProperties.getTimeZone()) ? ZoneId.of(depotProperties.getTimeZone()) : ZoneId.systemDefault();
         var expirationDate = accessTokenRequestDto.expirationDate().atStartOfDay().atZone(zoneId).toInstant();
 
         return JWT.create()
@@ -95,7 +92,7 @@ public class DefaultAccessTokenService implements AccessTokenService {
                 .withClaim("mode", accessTokenRequestDto.mode().toLowerCase())
                 .withSubject(accessTokenRequestDto.subject())
                 .withExpiresAt(expirationDate)
-                .sign(Algorithm.HMAC256(depotProperties.jwtSecret()));
+                .sign(Algorithm.HMAC256(depotProperties.getJwtSecret()));
     }
 
 }

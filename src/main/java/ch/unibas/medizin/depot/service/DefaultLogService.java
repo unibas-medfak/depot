@@ -24,7 +24,7 @@ public class DefaultLogService implements LogService {
         patternLayoutEncoder.start();
 
         var fileAppender = new FileAppender<ILoggingEvent>();
-        var logfile = depotProperties.baseDirectory().resolve(DepotUtil.LOGFILE_NAME).toString();
+        var logfile = depotProperties.getBaseDirectory().resolve(DepotUtil.LOGFILE_NAME).toString();
         fileAppender.setFile(logfile);
         fileAppender.setEncoder(patternLayoutEncoder);
         fileAppender.setContext(loggerContext);
