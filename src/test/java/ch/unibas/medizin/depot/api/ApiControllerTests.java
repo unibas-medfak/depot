@@ -131,7 +131,7 @@ public class ApiControllerTests {
 
     @Test
     public void Deny_file_with_invalid_name() throws IOException {
-        FileUtils.deleteDirectory(depotProperties.baseDirectory().resolve("realm").toFile());
+        FileUtils.deleteDirectory(depotProperties.getBaseDirectory().resolve("realm").toFile());
 
         var registerRequest = new HttpEntity<>(new AccessTokenRequestDto("admin_secret", "realm", "subject", "rw", tomorrow));
         var registerResponse = restTemplate.postForEntity(baseUrl + port + "/admin/register", registerRequest, AccessTokenResponseDto.class);
@@ -161,7 +161,7 @@ public class ApiControllerTests {
 
     @Test
     void Deny_write_file_to_folder_with_same_name() throws IOException {
-        FileUtils.deleteDirectory(depotProperties.baseDirectory().resolve("realm").toFile());
+        FileUtils.deleteDirectory(depotProperties.getBaseDirectory().resolve("realm").toFile());
 
         var registerRequest = new HttpEntity<>(new AccessTokenRequestDto("admin_secret", "realm", "subject", "rw", tomorrow));
         var registerResponse = restTemplate.postForEntity(baseUrl + port + "/admin/register", registerRequest, AccessTokenResponseDto.class);
@@ -205,7 +205,7 @@ public class ApiControllerTests {
 
     @Test
     void Deny_write_folder_to_file_with_same_name() throws IOException {
-        FileUtils.deleteDirectory(depotProperties.baseDirectory().resolve("realm").toFile());
+        FileUtils.deleteDirectory(depotProperties.getBaseDirectory().resolve("realm").toFile());
 
         var registerRequest = new HttpEntity<>(new AccessTokenRequestDto("admin_secret", "realm", "subject", "rw", tomorrow));
         var registerResponse = restTemplate.postForEntity(baseUrl + port + "/admin/register", registerRequest, AccessTokenResponseDto.class);
@@ -249,7 +249,7 @@ public class ApiControllerTests {
 
     @Test
     public void Put_file() throws IOException {
-        FileUtils.deleteDirectory(depotProperties.baseDirectory().resolve("realm").toFile());
+        FileUtils.deleteDirectory(depotProperties.getBaseDirectory().resolve("realm").toFile());
 
         var registerRequest = new HttpEntity<>(new AccessTokenRequestDto("admin_secret", "realm", "subject", "rw", tomorrow));
         var registerResponse = restTemplate.postForEntity(baseUrl + port + "/admin/register", registerRequest, AccessTokenResponseDto.class);

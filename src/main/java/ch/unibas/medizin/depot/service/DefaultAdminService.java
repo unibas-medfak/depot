@@ -6,8 +6,6 @@ import ch.unibas.medizin.depot.util.DepotUtil;
 import org.apache.commons.io.input.ReversedLinesFileReader;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.security.access.AccessDeniedException;
-import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
 import java.io.File;
@@ -23,18 +21,17 @@ public class DefaultAdminService implements AdminService {
 
     private final DepotProperties depotProperties;
 
-    private final PasswordEncoder passwordEncoder;
+    private final AuthorizationService authorizationService;
 
-    public DefaultAdminService(DepotProperties depotProperties, PasswordEncoder passwordEncoder) {
+    public DefaultAdminService(DepotProperties depotProperties, AuthorizationService authorizationService) {
         this.depotProperties = depotProperties;
-        this.passwordEncoder = passwordEncoder;
+        this.authorizationService = authorizationService;
     }
 
     @Override
     public List<String> getLastLogLines(LogRequestDto logRequestDto) {
-        if (!passwordEncoder.matches(logRequestDto.password(), depotProperties.adminPassword())) {
-            log.error("Log request with invalid password");
-            throw new AccessDeniedException("invalid password");
+        if (authorizationService.adminPasswordMismatches(logRequestDto.password())) {
+            return List.of();
         }
 
         log.info("Log requested");
@@ -42,7 +39,7 @@ public class DefaultAdminService implements AdminService {
         var lastLogLines  = new ArrayList<String>();
 
         var maxNumberOfLinesToRead = 100;
-        var logfile = depotProperties.baseDirectory().resolve(DepotUtil.LOGFILE_NAME).toString();
+        var logfile = depotProperties.getBaseDirectory().resolve(DepotUtil.LOGFILE_NAME).toString();
 
         try (ReversedLinesFileReader reader = new ReversedLinesFileReader(new File(logfile), StandardCharsets.UTF_8)) {
             String line;

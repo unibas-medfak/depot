@@ -29,7 +29,7 @@ public class JWTAuthorizationFilter extends OncePerRequestFilter {
     private final JWTVerifier verifier;
 
     public JWTAuthorizationFilter(DepotProperties depotProperties) {
-        Algorithm algorithm = Algorithm.HMAC256(depotProperties.jwtSecret());
+        var algorithm = Algorithm.HMAC256(depotProperties.getJwtSecret());
         this.verifier = JWT.require(algorithm).withIssuer("depot").build();
     }
 
