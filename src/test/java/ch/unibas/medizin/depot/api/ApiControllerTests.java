@@ -269,7 +269,7 @@ public class ApiControllerTests {
         var response = restTemplate.postForEntity(serverUrl, requestEntity, PutFileResponseDto.class);
 
         assertNotNull(response.getBody());
-        assertEquals(fileSize,response.getBody().bytes());
+        assertEquals(fileSize, response.getBody().bytes());
 
         serverUrl = baseUrl + port + "/put?path=//test/findMe/b/&hash=false";
         response = restTemplate.postForEntity(serverUrl, requestEntity, PutFileResponseDto.class);

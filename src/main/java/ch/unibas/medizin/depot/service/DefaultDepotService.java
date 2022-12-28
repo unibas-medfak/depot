@@ -114,14 +114,19 @@ public class DefaultDepotService implements DepotService {
         }
 
         try {
+            var tmpFile = Files.createTempFile("depot", "");
             CopyOption[] options = { StandardCopyOption.REPLACE_EXISTING };
-            var bytes = Files.copy(file.getInputStream(), fullPathAndFile, options);
 
+            var sha256 = "-";
             if (hash) {
-                return new PutFileResponseDto(bytes, DigestUtils.sha256Hex(file.getInputStream()));
+                sha256 = DigestUtils.sha256Hex(file.getInputStream());
             }
 
-            return new PutFileResponseDto(bytes, "-");
+            var bytes = Files.copy(file.getInputStream(), tmpFile, options);
+
+            Files.move(tmpFile, fullPathAndFile, StandardCopyOption.ATOMIC_MOVE);
+
+            return new PutFileResponseDto(bytes, sha256);
         } catch (Exception e) {
             throw new RuntimeException("Could not store the file. Error: " + e.getMessage());
         }
