@@ -19,6 +19,8 @@ public class DepotProperties {
 
     private static final Logger log = LoggerFactory.getLogger(DepotProperties.class);
 
+    private final String host;
+
     private final Path baseDirectory;
 
     private final String timeZone;
@@ -27,11 +29,16 @@ public class DepotProperties {
 
     private final String jwtSecret;
 
-    public DepotProperties(Path baseDirectory, String timeZone, String adminPassword, String jwtSecret) {
+    public DepotProperties(String host, Path baseDirectory, String timeZone, String adminPassword, String jwtSecret) {
+        this.host = host;
         this.baseDirectory = baseDirectory;
         this.timeZone = timeZone;
         this.adminPassword = getAdminPassword(baseDirectory, adminPassword);
         this.jwtSecret = getJwtSecret(baseDirectory, jwtSecret);
+    }
+
+    public String getHost() {
+        return host;
     }
 
     public Path getBaseDirectory() {
