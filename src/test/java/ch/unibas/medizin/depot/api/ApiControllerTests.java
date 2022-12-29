@@ -17,10 +17,7 @@ import org.springframework.util.LinkedMultiValueMap;
 import org.springframework.util.MultiValueMap;
 import org.springframework.util.StreamUtils;
 
-import java.io.BufferedOutputStream;
-import java.io.File;
-import java.io.FileOutputStream;
-import java.io.IOException;
+import java.io.*;
 import java.nio.file.Files;
 import java.nio.file.StandardOpenOption;
 import java.time.LocalDate;
@@ -74,6 +71,7 @@ public class ApiControllerTests {
         assertEquals(HttpStatus.OK, validRegisterResponse.getStatusCode());
 
         assertNotNull(validRegisterResponse.getBody());
+        // Files.write(new File("qr.png").toPath(), validRegisterResponse.getBody());
 
         var referenceBytes = IOUtils.resourceToByteArray("/qr.png");
         assertArrayEquals(referenceBytes, validRegisterResponse.getBody());

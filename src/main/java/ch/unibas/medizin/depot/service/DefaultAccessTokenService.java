@@ -3,8 +3,11 @@ package ch.unibas.medizin.depot.service;
 import ch.unibas.medizin.depot.config.DepotProperties;
 import ch.unibas.medizin.depot.dto.AccessTokenRequestDto;
 import ch.unibas.medizin.depot.dto.AccessTokenResponseDto;
+import ch.unibas.medizin.depot.dto.QrCodePayloadDto;
 import com.auth0.jwt.JWT;
 import com.auth0.jwt.algorithms.Algorithm;
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import io.nayuki.qrcodegen.QrCode;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -28,10 +31,13 @@ public class DefaultAccessTokenService implements AccessTokenService {
 
     private final LogService logService;
 
-    public DefaultAccessTokenService(DepotProperties depotProperties, AuthorizationService authorizationService, LogService logService) {
+    private final ObjectMapper objectMapper;
+
+    public DefaultAccessTokenService(DepotProperties depotProperties, AuthorizationService authorizationService, LogService logService, ObjectMapper objectMapper) {
         this.depotProperties = depotProperties;
         this.authorizationService = authorizationService;
         this.logService = logService;
+        this.objectMapper = objectMapper;
     }
 
     @Override
@@ -42,9 +48,18 @@ public class DefaultAccessTokenService implements AccessTokenService {
 
     @Override
     public byte[] requestTokenQr(AccessTokenRequestDto accessTokenRequestDto) {
+        var host = depotProperties.getHost();
         var token = getToken(accessTokenRequestDto);
-        var qrCode = QrCode.encodeText(token, QrCode.Ecc.LOW);
-        return toImage(qrCode);
+        var qrCodePayload = new QrCodePayloadDto(host, token);
+
+        try {
+            var jsonQrCodePayload = objectMapper.writeValueAsString(qrCodePayload);
+            var qrCode = QrCode.encodeText(jsonQrCodePayload, QrCode.Ecc.LOW);
+            return toImage(qrCode);
+        } catch (JsonProcessingException e) {
+            log.error("Could not encode payload", e);
+            throw new RuntimeException(e);
+        }
     }
 
     private byte[] toImage(QrCode qr) {
