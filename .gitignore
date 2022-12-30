@@ -33,3 +33,5 @@ build/
 .vscode/
 
 /depot/
+cert.pem
+key.pem
