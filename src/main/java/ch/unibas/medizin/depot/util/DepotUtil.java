@@ -3,7 +3,7 @@ package ch.unibas.medizin.depot.util;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 
-public class DepotUtil {
+public record DepotUtil() {
 
     public static final String LOGFILE_NAME = "depot-access.log";
 

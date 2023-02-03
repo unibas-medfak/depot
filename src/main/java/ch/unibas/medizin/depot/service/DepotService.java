@@ -24,18 +24,12 @@ import java.util.List;
 import java.util.Objects;
 
 @Service
-public class DepotService {
+public record DepotService(
+        DepotProperties depotProperties,
+        LogService logService
+) {
 
     private static final Logger log = LoggerFactory.getLogger(DepotService.class);
-
-    private final DepotProperties depotProperties;
-
-    private final LogService logService;
-
-    public DepotService(DepotProperties depotProperties, LogService logService) {
-        this.depotProperties = depotProperties;
-        this.logService = logService;
-    }
 
     @PostConstruct
     private void init() {

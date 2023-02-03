@@ -21,24 +21,14 @@ import java.io.IOException;
 import java.time.ZoneId;
 
 @Service
-public class AccessTokenService {
+public record AccessTokenService(
+        DepotProperties depotProperties,
+        AuthorizationService authorizationService,
+        LogService logService,
+        ObjectMapper objectMapper
+) {
 
     private static final Logger log = LoggerFactory.getLogger(AccessTokenService.class);
-
-    private final DepotProperties depotProperties;
-
-    private final AuthorizationService authorizationService;
-
-    private final LogService logService;
-
-    private final ObjectMapper objectMapper;
-
-    public AccessTokenService(DepotProperties depotProperties, AuthorizationService authorizationService, LogService logService, ObjectMapper objectMapper) {
-        this.depotProperties = depotProperties;
-        this.authorizationService = authorizationService;
-        this.logService = logService;
-        this.objectMapper = objectMapper;
-    }
 
     public AccessTokenResponseDto requestTokenString(AccessTokenRequestDto accessTokenRequestDto) {
         var token = getToken(accessTokenRequestDto);

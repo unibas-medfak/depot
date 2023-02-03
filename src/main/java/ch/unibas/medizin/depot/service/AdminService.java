@@ -15,18 +15,12 @@ import java.util.ArrayList;
 import java.util.List;
 
 @Service
-public class AdminService {
+public record AdminService(
+        DepotProperties depotProperties,
+        AuthorizationService authorizationService
+) {
 
     private static final Logger log = LoggerFactory.getLogger(AdminService.class);
-
-    private final DepotProperties depotProperties;
-
-    private final AuthorizationService authorizationService;
-
-    public AdminService(DepotProperties depotProperties, AuthorizationService authorizationService) {
-        this.depotProperties = depotProperties;
-        this.authorizationService = authorizationService;
-    }
 
     public List<String> getLastLogLines(LogRequestDto logRequestDto) {
         if (authorizationService.adminPasswordMismatches(logRequestDto.password())) {

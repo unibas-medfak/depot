@@ -17,7 +17,7 @@ import java.util.List;
 import java.util.stream.Collectors;
 
 @RestControllerAdvice(annotations = RestController.class)
-public class RestExceptionHandler {
+public record RestExceptionHandler() {
 
     private static final Logger log = LoggerFactory.getLogger(RestExceptionHandler.class);
 
