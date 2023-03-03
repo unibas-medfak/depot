@@ -46,7 +46,7 @@ public class ApiControllerTests {
 
     @Test
     public void Register_client_with_valid_request() {
-        var validRegisterRequest = new HttpEntity<>(new AccessTokenRequestDto("admin_secret", "re_al-m1", "subject1", "r", tomorrow));
+        var validRegisterRequest = new HttpEntity<>(new AccessTokenRequestDto("admin_secret", "re_al-m1", "Sub Ject 01.01.2099", "r", tomorrow));
         var validRegisterResponse = restTemplate.postForEntity(baseUrl + port + "/admin/register", validRegisterRequest, AccessTokenResponseDto.class);
         assertEquals(HttpStatus.OK, validRegisterResponse.getStatusCode());
         assertNotNull(validRegisterResponse.getBody());

@@ -12,12 +12,14 @@ import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.validation.constraints.Future;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.Size;
+
 import java.time.LocalDate;
 
 @Schema(name = "AccessTokenRequest")
-public record AccessTokenRequestDto(@Schema(example = "Top$ec3rit!") @NotBlank String password,
-                                    @Schema(description = "root folder", example = "exam") @NotBlank @RealmConstraint String realm,
-                                    @Schema(description = "client identifier", example = "iPad #213") @NotBlank String subject,
+public record AccessTokenRequestDto(@Schema(example = "Top$ec3rit!") @NotBlank @Size(max = 64) String password,
+                                    @Schema(description = "root folder", example = "exam") @NotBlank @Size(max = 64) @RealmConstraint String realm,
+                                    @Schema(description = "client identifier", example = "iPad #213") @NotBlank @Size(max = 64) String subject,
                                     @Schema(description = "access mode", allowableValues = {"r","w","rw"}) @NotBlank @ModeConstraint String mode,
                                     @Schema(description = "date of expiration", example = "2025-12-31") @NotNull @Future @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "yyyy-MM-dd") @JsonDeserialize(using = LocalDateDeserializer.class) @JsonSerialize(using = LocalDateSerializer.class) LocalDate expirationDate) {
 }
