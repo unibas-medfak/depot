@@ -29,6 +29,9 @@ public class SecurityConfiguration {
         httpSecurity
                 .csrf().disable()
                 .addFilterAfter(jwtAuthorizationFilter, UsernamePasswordAuthenticationFilter.class)
+                .authorizeHttpRequests()
+                .requestMatchers(HttpMethod.GET, "/").permitAll()
+                .and()
                 .authorizeHttpRequests().requestMatchers(HttpMethod.POST, "/admin/register", "/admin/qr", "/admin/log").permitAll()
                 .and()
                 .authorizeHttpRequests().requestMatchers("/v3/api-docs/**", "/swagger-ui/**").permitAll()

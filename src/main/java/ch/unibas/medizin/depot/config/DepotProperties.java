@@ -1,5 +1,6 @@
 package ch.unibas.medizin.depot.config;
 
+import org.apache.commons.lang3.SystemUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.FatalBeanException;
@@ -19,9 +20,9 @@ public class DepotProperties {
 
     private static final Logger log = LoggerFactory.getLogger(DepotProperties.class);
 
-    private final String host;
-
     private final Path baseDirectory;
+
+    private final String host;
 
     private final String timeZone;
 
@@ -29,12 +30,18 @@ public class DepotProperties {
 
     private final String jwtSecret;
 
-    public DepotProperties(String host, Path baseDirectory, String timeZone, String adminPassword, String jwtSecret) {
+    public DepotProperties(Path baseDirectory, String host, String timeZone, String adminPassword, String jwtSecret) {
+        if ("Mac OS X".equals(SystemUtils.OS_NAME)) {
+            this.baseDirectory = Path.of("/tmp/depot");
+        }
+        else {
+            this.baseDirectory = baseDirectory;
+        }
+
         this.host = host;
-        this.baseDirectory = baseDirectory;
         this.timeZone = timeZone;
-        this.adminPassword = getAdminPassword(baseDirectory, adminPassword);
-        this.jwtSecret = getJwtSecret(baseDirectory, jwtSecret);
+        this.adminPassword = getAdminPassword(this.baseDirectory, adminPassword);
+        this.jwtSecret = getJwtSecret(this.baseDirectory, jwtSecret);
     }
 
     public String getHost() {
@@ -58,6 +65,7 @@ public class DepotProperties {
     }
 
     private String getAdminPassword(Path baseDirectory, String adminPasswordFromProperties) {
+
         if (StringUtils.hasText(adminPasswordFromProperties)) {
             return adminPasswordFromProperties;
         }
