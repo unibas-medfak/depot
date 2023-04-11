@@ -34,7 +34,7 @@ public record DepotService(
     @PostConstruct
     private void init() {
         try {
-            Files.createDirectories(depotProperties.getBaseDirectory());
+            Files.createDirectories(depotProperties.getBaseDirectory().resolve("tmp"));
         } catch (IOException e) {
             log.error("Error", e);
             throw new RuntimeException("Could not initialize base directory");
@@ -105,7 +105,7 @@ public record DepotService(
         }
 
         try {
-            var tmpFile = Files.createTempFile("depot", "");
+            var tmpFile = Files.createTempFile(depotProperties.getBaseDirectory().resolve("tmp"), "depot", "");
             CopyOption[] options = { StandardCopyOption.REPLACE_EXISTING };
 
             var sha256 = "-";

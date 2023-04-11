@@ -60,7 +60,7 @@ public class ApiControllerTests {
         assertEquals(HttpStatus.OK, validRegisterResponse.getStatusCode());
 
         assertNotNull(validRegisterResponse.getBody());
-        var referenceToken = "eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJtb2RlIjoiciIsInN1YiI6InN1YmplY3QxIiwiaXNzIjoiZGVwb3QiLCJyZWFsbSI6InJlX2FsLW0xIiwiZXhwIjoyMTQxNjgzMjAwfQ.16258Z4X6lb4FUgNI-djrkLxDLuSlsT8kE0Lvhf3gso";
+        var referenceToken = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJkZXBvdCIsInJlYWxtIjoicmVfYWwtbTEiLCJtb2RlIjoiciIsInN1YiI6InN1YmplY3QxIiwiZXhwIjoyMTQxNjgzMjAwfQ.LihXwtt_sLu2HOSDnU0Tcf5hkfFtDsdgThdV-E3iiew";
         assertEquals(referenceToken, validRegisterResponse.getBody().token());
     }
 
