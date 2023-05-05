@@ -15,7 +15,7 @@ public class UiController {
 
     @GetMapping("/")
     public String info() {
-        return "depot " + versionHolder.getVersion() + " ready.";
+        return "Depot " + versionHolder.getVersion() + " on " + Thread.currentThread() + " ready to serve you.";
     }
 
 }
