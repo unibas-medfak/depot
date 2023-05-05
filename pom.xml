@@ -94,6 +94,12 @@
 				<artifactId>spring-boot-maven-plugin</artifactId>
 				<configuration>
 					<executable>true</executable>
+					<embeddedLaunchScriptProperties>
+						<property>
+							<name>inlinedConfScript</name>
+							<value>${basedir}/enable-preview.conf</value>
+						</property>
+					</embeddedLaunchScriptProperties>
 				</configuration>
 			</plugin>
 			<plugin>
