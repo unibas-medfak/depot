@@ -38,4 +38,16 @@ public class DepotUtilTests {
         assertFalse(DepotUtil.validFilename("1abc.-/@_%.txt"));
     }
 
+    @Test
+    void validAbsolutePath() {
+        assertTrue(DepotUtil.validAbsolutPath("cat.jpeg"));
+        assertTrue(DepotUtil.validAbsolutPath("/cat.jpeg"));
+        assertTrue(DepotUtil.validAbsolutPath("animals/cat.jpeg"));
+        assertTrue(DepotUtil.validAbsolutPath("/animals/cat.jpeg"));
+
+        assertFalse(DepotUtil.validAbsolutPath("/abcd/a#b.txt"));
+        assertFalse(DepotUtil.validAbsolutPath("abc#d/a.txt"));
+        assertFalse(DepotUtil.validAbsolutPath("//abc%d/a$c.txt"));
+    }
+
 }

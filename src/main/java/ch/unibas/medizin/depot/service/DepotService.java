@@ -61,8 +61,8 @@ public record DepotService(
     }
 
     public Resource get(String file) {
-        var basePathAndSubject = getBasePathAndSubject();
         var normalizedFile = DepotUtil.normalizePath(file);
+        var basePathAndSubject = getBasePathAndSubject();
         var fullPath = basePathAndSubject.basePath().resolve(normalizedFile);
         var resource = new FileSystemResource(fullPath);
 

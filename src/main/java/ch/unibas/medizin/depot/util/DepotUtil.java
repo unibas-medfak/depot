@@ -30,9 +30,9 @@ public record DepotUtil() {
 
     public static boolean validAbsolutPath(String candidate) {
         var candidateAsPath = Paths.get(candidate);
-        var candidatePath = candidateAsPath.getParent().toString();
+        var candidatePath = candidateAsPath.getParent();
 
-        if (!validPath(candidatePath)) {
+        if (candidatePath != null && !validPath(candidatePath.toString())) {
             return false;
         }
 
