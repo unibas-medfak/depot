@@ -22,5 +22,3 @@ d::::::ddddd::::::dde::::::::e           p:::::ppppp:::::::po:::::ooooo:::::o   
                                         p:::::::p
                                         ppppppppp
 
-${application.title} ${application.version}
-Powered by Spring Boot ${spring-boot.version}
