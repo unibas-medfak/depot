@@ -72,14 +72,15 @@ public class DepotProperties {
 
         log.info("No admin password found in application.properties");
 
-        var adminPasswordFilename = "adminpw.txt";
+        var adminPasswordFilename = ".adminpw";
+        var adminPasswordPath = baseDirectory.resolve(adminPasswordFilename);
 
         try {
-            var encodedAdminPassword = Files.readString(baseDirectory.resolve(adminPasswordFilename));
-            log.info("Admin password read from {}", adminPasswordFilename);
+            var encodedAdminPassword = Files.readString(adminPasswordPath);
+            log.info("Admin password read from {}", adminPasswordPath);
             return encodedAdminPassword;
         } catch (IOException e) {
-            log.info("No admin password found in {}", adminPasswordFilename);
+            log.info("No admin password found in {}", adminPasswordPath);
 
             var randomPassword = UUID.randomUUID().toString();
             log.error("!!! ADMIN PASSWORD = {} !!!", randomPassword);
@@ -105,14 +106,15 @@ public class DepotProperties {
 
         log.info("No JWT secret found in application.properties");
 
-        var jwtSecretFileName = "jwtsecret.txt";
+        var jwtSecretFileName = ".jwtsecret";
+        var jwtSecretFilePath = baseDirectory.resolve(jwtSecretFileName);
 
         try {
-            var jwtSecretFromFile = Files.readString(baseDirectory.resolve(jwtSecretFileName));
-            log.info("JWT secret read from {}", jwtSecretFileName);
+            var jwtSecretFromFile = Files.readString(jwtSecretFilePath);
+            log.info("JWT secret read from {}", jwtSecretFilePath);
             return jwtSecretFromFile;
         } catch (IOException e) {
-            log.info("No JWT secret found in {}", jwtSecretFileName);
+            log.info("No JWT secret found in {}", jwtSecretFilePath);
 
             var random = new Random();
             var randomJwtSecret = new byte[256];

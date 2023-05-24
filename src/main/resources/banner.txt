@@ -1,0 +1,26 @@
+            dddddddd
+            d::::::d                                                                  tttt
+            d::::::d                                                               ttt:::t
+            d::::::d                                                               t:::::t
+            d:::::d                                                                t:::::t
+    ddddddddd:::::d     eeeeeeeeeeee    ppppp   ppppppppp      ooooooooooo   ttttttt:::::ttttttt
+  dd::::::::::::::d   ee::::::::::::ee  p::::ppp:::::::::p   oo:::::::::::oo t:::::::::::::::::t
+ d::::::::::::::::d  e::::::eeeee:::::eep:::::::::::::::::p o:::::::::::::::ot:::::::::::::::::t
+d:::::::ddddd:::::d e::::::e     e:::::epp::::::ppppp::::::po:::::ooooo:::::otttttt:::::::tttttt
+d::::::d    d:::::d e:::::::eeeee::::::e p:::::p     p:::::po::::o     o::::o      t:::::t
+d:::::d     d:::::d e:::::::::::::::::e  p:::::p     p:::::po::::o     o::::o      t:::::t
+d:::::d     d:::::d e::::::eeeeeeeeeee   p:::::p     p:::::po::::o     o::::o      t:::::t
+d:::::d     d:::::d e:::::::e            p:::::p    p::::::po::::o     o::::o      t:::::t    tttttt
+d::::::ddddd::::::dde::::::::e           p:::::ppppp:::::::po:::::ooooo:::::o      t::::::tttt:::::t
+ d:::::::::::::::::d e::::::::eeeeeeee   p::::::::::::::::p o:::::::::::::::o      tt::::::::::::::t
+  d:::::::::ddd::::d  ee:::::::::::::e   p::::::::::::::pp   oo:::::::::::oo         tt:::::::::::tt
+   ddddddddd   ddddd    eeeeeeeeeeeeee   p::::::pppppppp       ooooooooooo             ttttttttttt
+                                         p:::::p
+                                         p:::::p
+                                        p:::::::p
+                                        p:::::::p
+                                        p:::::::p
+                                        ppppppppp
+
+${application.title} ${application.version}
+Powered by Spring Boot ${spring-boot.version}
