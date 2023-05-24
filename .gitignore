@@ -35,3 +35,6 @@ build/
 /depot/
 cert.pem
 key.pem
+
+release.properties
+pom.xml.releaseBackup
