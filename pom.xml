@@ -9,7 +9,7 @@
 	</parent>
 	<groupId>ch.unibas.medizin</groupId>
 	<artifactId>depot</artifactId>
-	<version>0.0.1-SNAPSHOT</version>
+	<version>0.0.1</version>
 	<name>depot</name>
 	<description>Simple and secure file storage service</description>
 
