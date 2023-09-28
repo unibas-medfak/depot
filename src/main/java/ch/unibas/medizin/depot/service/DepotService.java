@@ -3,6 +3,10 @@ package ch.unibas.medizin.depot.service;
 import ch.unibas.medizin.depot.config.DepotProperties;
 import ch.unibas.medizin.depot.dto.FileDto;
 import ch.unibas.medizin.depot.dto.PutFileResponseDto;
+import ch.unibas.medizin.depot.exception.FileAlreadyExistsAsFolderException;
+import ch.unibas.medizin.depot.exception.FileNotFoundException;
+import ch.unibas.medizin.depot.exception.FolderAlreadyExistsAsFileException;
+import ch.unibas.medizin.depot.exception.PathNotFoundException;
 import ch.unibas.medizin.depot.util.DepotUtil;
 import jakarta.annotation.PostConstruct;
 import org.apache.commons.codec.digest.DigestUtils;
@@ -10,12 +14,10 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.core.io.FileSystemResource;
 import org.springframework.core.io.Resource;
-import org.springframework.http.HttpStatusCode;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
 import org.springframework.web.multipart.MultipartFile;
-import org.springframework.web.server.ResponseStatusException;
 
 import java.io.IOException;
 import java.nio.file.*;
@@ -55,6 +57,7 @@ public record DepotService(
             fileList.forEach(entry -> entries.add(new FileDto(entry.getFileName().toString(), Files.isDirectory(entry) ? FileDto.FileType.FOLDER : FileDto.FileType.FILE)));
         } catch (IOException e) {
             log.info("No such path {}", fullPath);
+            throw new PathNotFoundException(path);
         }
 
         return entries;
@@ -72,7 +75,7 @@ public record DepotService(
         if (resource.exists() || resource.isReadable()) {
             return resource;
         } else {
-            throw new RuntimeException("Could not read the file!");
+            throw new FileNotFoundException(file);
         }
     }
 
@@ -87,12 +90,12 @@ public record DepotService(
 
         if (Files.isRegularFile(fullPath)) {
             log.error("Folder {} already exists as file", fullPath);
-            throw new ResponseStatusException(HttpStatusCode.valueOf(400), "Folder already exists as file");
+            throw new FolderAlreadyExistsAsFileException(path);
         }
 
         if (Files.isDirectory(fullPathAndFile)) {
             log.error("File {} already exists as folder", fullPathAndFile);
-            throw new ResponseStatusException(HttpStatusCode.valueOf(400), "File already exists as folder");
+            throw new FileAlreadyExistsAsFolderException(file.getOriginalFilename());
         }
 
         try {

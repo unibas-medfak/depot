@@ -198,7 +198,7 @@ public class ApiControllerTests {
         serverUrl = baseUrl + port + "/put?path=/folder&hash=true";
         response = restTemplate.postForEntity(serverUrl, requestEntity, PutFileResponseDto.class);
 
-        assertEquals(HttpStatus.BAD_REQUEST, response.getStatusCode());
+        assertEquals(HttpStatus.CONFLICT, response.getStatusCode());
     }
 
     @Test
@@ -242,7 +242,7 @@ public class ApiControllerTests {
         serverUrl = baseUrl + port + "/put?path=/&hash=true";
         response = restTemplate.postForEntity(serverUrl, requestEntity, PutFileResponseDto.class);
 
-        assertEquals(HttpStatus.BAD_REQUEST, response.getStatusCode());
+        assertEquals(HttpStatus.CONFLICT, response.getStatusCode());
     }
 
     @Test

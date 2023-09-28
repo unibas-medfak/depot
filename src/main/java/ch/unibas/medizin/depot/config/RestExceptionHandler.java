@@ -1,10 +1,15 @@
 package ch.unibas.medizin.depot.config;
 
+import ch.unibas.medizin.depot.exception.FileAlreadyExistsAsFolderException;
+import ch.unibas.medizin.depot.exception.FileNotFoundException;
+import ch.unibas.medizin.depot.exception.FolderAlreadyExistsAsFileException;
+import ch.unibas.medizin.depot.exception.PathNotFoundException;
 import ch.unibas.medizin.depot.util.ErrorResponse;
 import ch.unibas.medizin.depot.util.FieldError;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.ProblemDetail;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.web.bind.MethodArgumentNotValidException;
@@ -21,10 +26,36 @@ public record RestExceptionHandler() {
 
     private static final Logger log = LoggerFactory.getLogger(RestExceptionHandler.class);
 
-    @ExceptionHandler(ResponseStatusException.class)
-    public ResponseEntity<ErrorResponse> handleNotFound(final ResponseStatusException exception) {
-        var errorResponse = new ErrorResponse(exception.getStatusCode().value(), exception.getClass().getSimpleName(), exception.getMessage(), List.of());
-        return new ResponseEntity<>(errorResponse, exception.getStatusCode());
+    @ExceptionHandler(PathNotFoundException.class)
+    public ProblemDetail handlePathNotFoundException(PathNotFoundException pathNotFoundException) {
+        var problemDetails = ProblemDetail.forStatusAndDetail(HttpStatus.NOT_FOUND, pathNotFoundException.getLocalizedMessage());
+        problemDetails.setTitle("Path Not Found");
+        problemDetails.setProperty("path", pathNotFoundException.getPath());
+        return problemDetails;
+    }
+
+    @ExceptionHandler(FileNotFoundException.class)
+    public ProblemDetail handleFileNotFoundException(FileNotFoundException fileNotFoundException) {
+        var problemDetails = ProblemDetail.forStatusAndDetail(HttpStatus.NOT_FOUND, fileNotFoundException.getLocalizedMessage());
+        problemDetails.setTitle("File Not Found");
+        problemDetails.setProperty("file", fileNotFoundException.getFile());
+        return problemDetails;
+    }
+
+    @ExceptionHandler(FileAlreadyExistsAsFolderException.class)
+    public ProblemDetail handleFileAlreadyExistsAsFolderException(FileAlreadyExistsAsFolderException fileAlreadyExistsAsFolderException) {
+        var problemDetails = ProblemDetail.forStatusAndDetail(HttpStatus.CONFLICT, fileAlreadyExistsAsFolderException.getLocalizedMessage());
+        problemDetails.setTitle("File Exists");
+        problemDetails.setProperty("file", fileAlreadyExistsAsFolderException.getFile());
+        return problemDetails;
+    }
+
+    @ExceptionHandler(FolderAlreadyExistsAsFileException.class)
+    public ProblemDetail handleFolderAlreadyExistsAsFileException(FolderAlreadyExistsAsFileException folderAlreadyExistsAsFileException) {
+        var problemDetails = ProblemDetail.forStatusAndDetail(HttpStatus.CONFLICT, folderAlreadyExistsAsFileException.getLocalizedMessage());
+        problemDetails.setTitle("Folder Exists");
+        problemDetails.setProperty("folder", folderAlreadyExistsAsFileException.getPath());
+        return problemDetails;
     }
 
     @ExceptionHandler(MethodArgumentNotValidException.class)
