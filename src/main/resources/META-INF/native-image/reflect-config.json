@@ -1,0 +1,12 @@
+[
+  {
+    "name": "ch.unibas.medizin.depot.validation.ModeValidator",
+    "allPublicConstructors": true,
+    "allDeclaredMethods": true
+  },
+  {
+    "name": "ch.unibas.medizin.depot.validation.RealmValidator",
+    "allPublicConstructors": true,
+    "allDeclaredMethods": true
+  }
+]
