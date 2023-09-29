@@ -9,7 +9,7 @@ public record RealmValidator() implements ConstraintValidator<RealmConstraint, S
 
     @Override
     public boolean isValid(String realm, ConstraintValidatorContext constraintValidatorContext) {
-        return DepotUtil.validRealm(realm);
+        return DepotUtil.isValidRealm(realm);
     }
 
 }

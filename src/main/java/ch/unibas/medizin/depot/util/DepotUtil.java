@@ -28,28 +28,28 @@ public interface DepotUtil {
         );
     }
 
-    static boolean validAbsolutPath(String candidate) {
+    static boolean isValidAbsolutPath(String candidate) {
         var candidateAsPath = Paths.get(candidate);
         var candidatePath = candidateAsPath.getParent();
 
-        if (candidatePath != null && !validPath(candidatePath.toString())) {
+        if (candidatePath != null && !isValidPath(candidatePath.toString())) {
             return false;
         }
 
         var candidateFilename = candidateAsPath.getFileName().toString();
 
-        return validFilename(candidateFilename);
+        return isValidFilename(candidateFilename);
     }
 
-    static boolean validRealm(String candidate) {
+    static boolean isValidRealm(String candidate) {
         return isValid(candidate, false);
     }
 
-    static boolean validFilename(String candidate) {
+    static boolean isValidFilename(String candidate) {
         return isValid(candidate, false);
     }
 
-    static boolean validPath(String candidate) {
+    static boolean isValidPath(String candidate) {
         return isValid(candidate, true);
     }
 

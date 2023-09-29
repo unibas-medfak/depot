@@ -19,35 +19,35 @@ public class DepotUtilTests {
 
     @Test
     void validRealm() {
-        assertTrue(DepotUtil.validRealm("1abc.-+@_%"));
-        assertFalse(DepotUtil.validRealm("1abc.-&@_%"));
-        assertFalse(DepotUtil.validRealm("1abc.-/@_%"));
+        assertTrue(DepotUtil.isValidRealm("1abc.-+@_%"));
+        assertFalse(DepotUtil.isValidRealm("1abc.-&@_%"));
+        assertFalse(DepotUtil.isValidRealm("1abc.-/@_%"));
     }
 
     @Test
     void validFilename() {
-        assertTrue(DepotUtil.validFilename("1abc.-@_%.txt"));
-        assertFalse(DepotUtil.validFilename("1abc.-!@_%.txt"));
-        assertFalse(DepotUtil.validFilename("1abc.-/@_%.txt"));
+        assertTrue(DepotUtil.isValidFilename("1abc.-@_%.txt"));
+        assertFalse(DepotUtil.isValidFilename("1abc.-!@_%.txt"));
+        assertFalse(DepotUtil.isValidFilename("1abc.-/@_%.txt"));
     }
 
     @Test
     void validPath() {
-        assertTrue(DepotUtil.validPath("1abc.-@_%.txt"));
-        assertFalse(DepotUtil.validFilename("1abc.-!@_%.txt"));
-        assertFalse(DepotUtil.validFilename("1abc.-/@_%.txt"));
+        assertTrue(DepotUtil.isValidPath("1abc.-@_%.txt"));
+        assertFalse(DepotUtil.isValidFilename("1abc.-!@_%.txt"));
+        assertFalse(DepotUtil.isValidFilename("1abc.-/@_%.txt"));
     }
 
     @Test
     void validAbsolutePath() {
-        assertTrue(DepotUtil.validAbsolutPath("cat.jpeg"));
-        assertTrue(DepotUtil.validAbsolutPath("/cat.jpeg"));
-        assertTrue(DepotUtil.validAbsolutPath("animals/cat.jpeg"));
-        assertTrue(DepotUtil.validAbsolutPath("/animals/cat.jpeg"));
+        assertTrue(DepotUtil.isValidAbsolutPath("cat.jpeg"));
+        assertTrue(DepotUtil.isValidAbsolutPath("/cat.jpeg"));
+        assertTrue(DepotUtil.isValidAbsolutPath("animals/cat.jpeg"));
+        assertTrue(DepotUtil.isValidAbsolutPath("/animals/cat.jpeg"));
 
-        assertFalse(DepotUtil.validAbsolutPath("/abcd/a#b.txt"));
-        assertFalse(DepotUtil.validAbsolutPath("abc#d/a.txt"));
-        assertFalse(DepotUtil.validAbsolutPath("//abc%d/a$c.txt"));
+        assertFalse(DepotUtil.isValidAbsolutPath("/abcd/a#b.txt"));
+        assertFalse(DepotUtil.isValidAbsolutPath("abc#d/a.txt"));
+        assertFalse(DepotUtil.isValidAbsolutPath("//abc%d/a$c.txt"));
     }
 
 }

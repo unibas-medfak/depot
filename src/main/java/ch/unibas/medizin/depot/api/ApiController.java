@@ -40,7 +40,7 @@ public class ApiController {
     @PreAuthorize("hasRole('READ')")
     @Operation(summary = "List all files and folders in the given path")
     public ResponseEntity<List<FileDto>> list(@Parameter(description = "Path to be listed", example = "pictures/cats") @RequestParam("path") final String path) {
-        if (!DepotUtil.validPath(path)) {
+        if (!DepotUtil.isValidPath(path)) {
             log.error("Invalid request - list path {}", path);
             throw new InvlidRequestException("path", path, INVALID_REQUEST_DETAIL);
         }
@@ -52,7 +52,7 @@ public class ApiController {
     @PreAuthorize("hasRole('READ')")
     @Operation(summary = "Retrieve a file")
     public Resource get(@Parameter(description = "Filename and Path to be retrieved", example = "pictures/cats/cat.png") @RequestParam("file") final String file) {
-        if (!DepotUtil.validAbsolutPath(file)) {
+        if (!DepotUtil.isValidAbsolutPath(file)) {
             log.error("Invalid request - get file {}", file);
             throw new InvlidRequestException("file", file, INVALID_REQUEST_DETAIL);
         }
@@ -67,12 +67,12 @@ public class ApiController {
                                                   @Parameter(description = "Path where the file will be stored", example = "pictures/cats") @RequestParam final String path,
                                                   @Parameter(description = "Whether the response shall contain a SHA256 hash of the stored data", example = "true") @RequestParam(required = false) final boolean hash) {
 
-        if (!DepotUtil.validPath(path)) {
+        if (!DepotUtil.isValidPath(path)) {
             log.error("Invalid request - put path {}", path);
             throw new InvlidRequestException("path", path, INVALID_REQUEST_DETAIL);
         }
 
-        if (!DepotUtil.validFilename(file.getOriginalFilename())) {
+        if (!DepotUtil.isValidFilename(file.getOriginalFilename())) {
             log.error("Invalid request - put filename {}", file.getOriginalFilename());
             throw new InvlidRequestException("filename", file.getOriginalFilename(), INVALID_REQUEST_DETAIL);
         }
