@@ -6,7 +6,6 @@ import ch.unibas.medizin.depot.util.DepotUtil;
 import org.apache.commons.io.input.ReversedLinesFileReader;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Service;
 
 import java.io.File;
@@ -24,9 +23,7 @@ public record AdminService(
     private static final Logger log = LoggerFactory.getLogger(AdminService.class);
 
     public List<String> getLastLogLines(LogRequestDto logRequestDto) {
-        if (authorizationService.adminPasswordMismatches(logRequestDto.password())) {
-            throw new AccessDeniedException("Invalid password");
-        }
+        authorizationService.throwIfAdminPasswordMismatches(logRequestDto.password());
 
         log.info("Log requested");
 

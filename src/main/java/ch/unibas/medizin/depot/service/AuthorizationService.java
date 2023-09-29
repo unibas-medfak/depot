@@ -15,13 +15,11 @@ public record AuthorizationService(
 
     private static final Logger log = LoggerFactory.getLogger(AuthorizationService.class);
 
-    public boolean adminPasswordMismatches(String givenAdminPassword) {
+    public void throwIfAdminPasswordMismatches(String givenAdminPassword) {
         if (!passwordEncoder.matches(givenAdminPassword, depotProperties.getAdminPassword())) {
-            log.error("Log request with invalid password");
+            log.error("Request with invalid admin password");
             throw new AccessDeniedException("Invalid password");
         }
-
-        return false;
     }
 
 }

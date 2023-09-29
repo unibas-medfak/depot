@@ -3,11 +3,11 @@ package ch.unibas.medizin.depot.util;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 
-public record DepotUtil() {
+public interface DepotUtil {
 
-    public static final String LOGFILE_NAME = "depot-access.log";
+    String LOGFILE_NAME = "depot-access.log";
 
-    public static Path normalizePath(String path) {
+    static Path normalizePath(String path) {
         path = path.replaceAll(" ", "");
 
         var changed = true;
@@ -28,7 +28,7 @@ public record DepotUtil() {
         );
     }
 
-    public static boolean validAbsolutPath(String candidate) {
+    static boolean validAbsolutPath(String candidate) {
         var candidateAsPath = Paths.get(candidate);
         var candidatePath = candidateAsPath.getParent();
 
@@ -41,15 +41,15 @@ public record DepotUtil() {
         return validFilename(candidateFilename);
     }
 
-    public static boolean validRealm(String candidate) {
+    static boolean validRealm(String candidate) {
         return isValid(candidate, false);
     }
 
-    public static boolean validFilename(String candidate) {
+    static boolean validFilename(String candidate) {
         return isValid(candidate, false);
     }
 
-    public static boolean validPath(String candidate) {
+    static boolean validPath(String candidate) {
         return isValid(candidate, true);
     }
 

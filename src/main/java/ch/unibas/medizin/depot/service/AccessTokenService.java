@@ -11,7 +11,6 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import io.nayuki.qrcodegen.QrCode;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
 
@@ -74,9 +73,7 @@ public record AccessTokenService(
     }
 
     private String getToken(AccessTokenRequestDto accessTokenRequestDto) {
-        if (authorizationService.adminPasswordMismatches(accessTokenRequestDto.password())) {
-            throw new AccessDeniedException("Invalid password");
-        }
+        authorizationService.throwIfAdminPasswordMismatches(accessTokenRequestDto.password());
 
         log.info("Token requested with realm={} subject={} mode={} expirationDate={}",
                 accessTokenRequestDto.realm(),

@@ -57,7 +57,6 @@ public record RestExceptionHandler() {
 
     @ExceptionHandler(AccessDeniedException.class)
     public ProblemDetail handleAccessDenied(final AccessDeniedException accessDeniedException) {
-        log.error(accessDeniedException.getMessage());
         var problemDetails = ProblemDetail.forStatusAndDetail(HttpStatus.UNAUTHORIZED, accessDeniedException.getLocalizedMessage());
         problemDetails.setTitle("Access denied");
         return problemDetails;
