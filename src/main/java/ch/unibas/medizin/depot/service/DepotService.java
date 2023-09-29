@@ -38,7 +38,7 @@ public record DepotService(
         try {
             Files.createDirectories(depotProperties.getBaseDirectory().resolve("tmp"));
         } catch (IOException e) {
-            log.error("Error", e);
+            log.error("Could not initialize base directory", e);
             throw new RuntimeException("Could not initialize base directory");
         }
     }
@@ -104,7 +104,7 @@ public record DepotService(
             log.debug("Folder {} already exists", fullPath);
         } catch (IOException e) {
             log.error("Could not initialize folder for upload", e);
-            throw new RuntimeException("Could not initialize folder for upload!");
+            throw new RuntimeException("Could not initialize folder for upload.");
         }
 
         try {
@@ -122,7 +122,7 @@ public record DepotService(
 
             return new PutFileResponseDto(bytes, sha256);
         } catch (Exception e) {
-            throw new RuntimeException("Could not store the file. Error: " + e.getMessage());
+            throw new RuntimeException("Could not store the file. " + e.getMessage());
         }
     }
 

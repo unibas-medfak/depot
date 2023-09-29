@@ -14,7 +14,7 @@ import org.springframework.stereotype.Service;
 @Service
 public class LogService {
 
-    enum EventType {
+    public enum EventType {
         TOKEN, GET, PUT, LIST
     }
 

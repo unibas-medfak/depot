@@ -18,7 +18,7 @@ public record AuthorizationService(
     public boolean adminPasswordMismatches(String givenAdminPassword) {
         if (!passwordEncoder.matches(givenAdminPassword, depotProperties.getAdminPassword())) {
             log.error("Log request with invalid password");
-            throw new AccessDeniedException("invalid password");
+            throw new AccessDeniedException("Invalid password");
         }
 
         return false;

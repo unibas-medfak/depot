@@ -5,7 +5,7 @@ public class PathNotFoundException extends RuntimeException {
     private final String path;
 
     public PathNotFoundException(String path) {
-        super("Path " + path + " not found.");
+        super("Path " + path + " not found");
         this.path = path;
     }
 

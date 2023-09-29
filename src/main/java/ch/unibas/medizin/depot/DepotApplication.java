@@ -11,6 +11,8 @@ import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.boot.autoconfigure.security.servlet.UserDetailsServiceAutoConfiguration;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 
+import java.util.Locale;
+
 @EnableConfigurationProperties(DepotProperties.class)
 @SpringBootApplication(exclude = { UserDetailsServiceAutoConfiguration.class })
 @OpenAPIDefinition(info = @Info(title = "Depot API", version = "1.0", description = "Secure file storage API"))
@@ -18,6 +20,7 @@ import org.springframework.boot.context.properties.EnableConfigurationProperties
 public class DepotApplication {
 
 	public static void main(String[] args) {
+		Locale.setDefault(Locale.ENGLISH);
 		SpringApplication.run(DepotApplication.class, args);
 	}
 

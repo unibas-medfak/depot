@@ -5,7 +5,7 @@ public class FolderAlreadyExistsAsFileException extends RuntimeException {
     private final String path;
 
     public FolderAlreadyExistsAsFileException(String path) {
-        super("Folder " + path + " already exists as file.");
+        super("Folder " + path + " already exists as file");
         this.path = path;
     }
 

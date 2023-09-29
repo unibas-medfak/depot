@@ -83,7 +83,7 @@ public class DepotProperties {
             log.info("No admin password found in {}", adminPasswordPath);
 
             var randomPassword = UUID.randomUUID().toString();
-            log.error("!!! ADMIN PASSWORD = {} !!!", randomPassword);
+            log.error("!!!!!!!!!!!!!!!! ADMIN PASSWORD = {} !!!!!!!!!!!!!!!!", randomPassword);
 
             var passwordEncoder = new BCryptPasswordEncoder();
             var encodedAdminPassword = passwordEncoder.encode(randomPassword);

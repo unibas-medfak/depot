@@ -25,7 +25,7 @@ public record AdminService(
 
     public List<String> getLastLogLines(LogRequestDto logRequestDto) {
         if (authorizationService.adminPasswordMismatches(logRequestDto.password())) {
-            throw new AccessDeniedException("Wrong password");
+            throw new AccessDeniedException("Invalid password");
         }
 
         log.info("Log requested");
@@ -35,7 +35,7 @@ public record AdminService(
         var maxNumberOfLinesToRead = 100;
         var logfile = depotProperties.getBaseDirectory().resolve(DepotUtil.LOGFILE_NAME).toString();
 
-        try (ReversedLinesFileReader reader = new ReversedLinesFileReader(new File(logfile), StandardCharsets.UTF_8)) {
+        try (ReversedLinesFileReader reader = ReversedLinesFileReader.builder().setFile(new File(logfile)).setCharset(StandardCharsets.UTF_8).get()) {
             String line;
             while ((line = reader.readLine()) != null && lastLogLines.size() < maxNumberOfLinesToRead) {
                 lastLogLines.add(line);

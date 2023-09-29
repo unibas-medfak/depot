@@ -2,6 +2,7 @@ package ch.unibas.medizin.depot.api;
 
 import ch.unibas.medizin.depot.dto.FileDto;
 import ch.unibas.medizin.depot.dto.PutFileResponseDto;
+import ch.unibas.medizin.depot.exception.InvlidRequestException;
 import ch.unibas.medizin.depot.service.DepotService;
 import ch.unibas.medizin.depot.util.DepotUtil;
 import io.swagger.v3.oas.annotations.Operation;
@@ -27,6 +28,8 @@ public class ApiController {
 
     private static final Logger log = LoggerFactory.getLogger(ApiController.class);
 
+    private static final String INVALID_REQUEST_DETAIL = "must only contain letters, digits and the following chars . _ - @ % + /";
+
     private final DepotService depotService;
 
     public ApiController(DepotService depotService) {
@@ -38,7 +41,8 @@ public class ApiController {
     @Operation(summary = "List all files and folders in the given path")
     public ResponseEntity<List<FileDto>> list(@Parameter(description = "Path to be listed", example = "pictures/cats") @RequestParam("path") final String path) {
         if (!DepotUtil.validPath(path)) {
-            return ResponseEntity.badRequest().build();
+            log.error("Invalid request - list path {}", path);
+            throw new InvlidRequestException("path", path, INVALID_REQUEST_DETAIL);
         }
 
         return ResponseEntity.ok(depotService.list(path));
@@ -49,8 +53,8 @@ public class ApiController {
     @Operation(summary = "Retrieve a file")
     public Resource get(@Parameter(description = "Filename and Path to be retrieved", example = "pictures/cats/cat.png") @RequestParam("file") final String file) {
         if (!DepotUtil.validAbsolutPath(file)) {
-            log.error("Access denied for request of file {}", file);
-            return null;
+            log.error("Invalid request - get file {}", file);
+            throw new InvlidRequestException("file", file, INVALID_REQUEST_DETAIL);
         }
 
         return depotService.get(file);
@@ -62,12 +66,15 @@ public class ApiController {
     public ResponseEntity<PutFileResponseDto> put(@Parameter(description = "Multipart file to be stored") @RequestParam("file") final MultipartFile file,
                                                   @Parameter(description = "Path where the file will be stored", example = "pictures/cats") @RequestParam final String path,
                                                   @Parameter(description = "Whether the response shall contain a SHA256 hash of the stored data", example = "true") @RequestParam(required = false) final boolean hash) {
+
         if (!DepotUtil.validPath(path)) {
-            return ResponseEntity.badRequest().build();
+            log.error("Invalid request - put path {}", path);
+            throw new InvlidRequestException("path", path, INVALID_REQUEST_DETAIL);
         }
 
         if (!DepotUtil.validFilename(file.getOriginalFilename())) {
-            return ResponseEntity.badRequest().build();
+            log.error("Invalid request - put filename {}", file.getOriginalFilename());
+            throw new InvlidRequestException("filename", file.getOriginalFilename(), INVALID_REQUEST_DETAIL);
         }
 
         return ResponseEntity.ok(depotService.put(file, path, hash));
