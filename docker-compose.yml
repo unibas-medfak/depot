@@ -2,6 +2,8 @@ version: "3.9"
 services:
   app:
     image: depot:latest
+    volumes:
+      - ./depot:/var/local/depot/
   nginx:
     image: nginx
     volumes:
