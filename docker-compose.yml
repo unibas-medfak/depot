@@ -5,7 +5,7 @@ services:
     volumes:
       - ./depot:/var/local/depot/
   nginx:
-    image: nginx
+    image: nginx:latest
     volumes:
       - ./nginx.conf:/etc/nginx/conf.d/default.conf
       - ./ssl:/root/ssl
