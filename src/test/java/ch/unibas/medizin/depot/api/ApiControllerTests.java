@@ -20,6 +20,7 @@ import org.springframework.util.StreamUtils;
 import java.io.*;
 import java.nio.file.Files;
 import java.nio.file.StandardOpenOption;
+import java.time.Instant;
 import java.time.LocalDate;
 import java.util.Arrays;
 import java.util.Random;
@@ -283,9 +284,14 @@ public class ApiControllerTests {
 
         var folderEntry = Arrays.stream(listBody).filter(a -> a.type().equals(FileDto.FileType.FOLDER)).findFirst().orElseThrow();
         assertEquals("b", folderEntry.name());
+        var now = Instant.now();
+        var modified = folderEntry.modified();
+        assertTrue(now.minusSeconds(1).isBefore(modified));
 
         var fileEntry = Arrays.stream(listBody).filter(a -> a.type().equals(FileDto.FileType.FILE)).findFirst().orElseThrow();
         assertEquals(randomFile.getName(), fileEntry.name());
+        modified = fileEntry.modified();
+        assertTrue(now.minusSeconds(1).isBefore(modified));
 
         var logRequest = new HttpEntity<>(new LogRequestDto("admin_secret"));
         var logResponse = restTemplate.postForEntity(baseUrl + port + "/admin/log", logRequest, String[].class);

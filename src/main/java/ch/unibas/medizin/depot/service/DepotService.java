@@ -21,6 +21,7 @@ import org.springframework.web.multipart.MultipartFile;
 
 import java.io.IOException;
 import java.nio.file.*;
+import java.nio.file.attribute.BasicFileAttributes;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Objects;
@@ -54,7 +55,14 @@ public record DepotService(
         var entries = new LinkedList<FileDto>();
 
         try (var fileList = Files.list(fullPath)) {
-            fileList.forEach(entry -> entries.add(new FileDto(entry.getFileName().toString(), Files.isDirectory(entry) ? FileDto.FileType.FOLDER : FileDto.FileType.FILE)));
+            fileList.forEach(entry -> {
+                try {
+                    var basicFileAttributes = Files.readAttributes(entry, BasicFileAttributes.class);
+                    entries.add(new FileDto(entry.getFileName().toString(), Files.isDirectory(entry) ? FileDto.FileType.FOLDER : FileDto.FileType.FILE, basicFileAttributes.lastModifiedTime().toInstant()));
+                } catch (IOException e) {
+                    log.error("Could not read attributes of {}", fullPath);
+                }
+            });
         } catch (IOException e) {
             log.info("No such path {}", fullPath);
             throw new PathNotFoundException(path);
