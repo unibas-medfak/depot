@@ -287,11 +287,13 @@ public class ApiControllerTests {
         var now = Instant.now();
         var modified = folderEntry.modified();
         assertTrue(now.minusSeconds(1).isBefore(modified));
+        assertEquals(0, folderEntry.size());
 
         var fileEntry = Arrays.stream(listBody).filter(a -> a.type().equals(FileDto.FileType.FILE)).findFirst().orElseThrow();
         assertEquals(randomFile.getName(), fileEntry.name());
         modified = fileEntry.modified();
         assertTrue(now.minusSeconds(1).isBefore(modified));
+        assertEquals(fileSize, fileEntry.size());
 
         var logRequest = new HttpEntity<>(new LogRequestDto("admin_secret"));
         var logResponse = restTemplate.postForEntity(baseUrl + port + "/admin/log", logRequest, String[].class);

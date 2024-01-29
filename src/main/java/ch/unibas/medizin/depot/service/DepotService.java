@@ -58,7 +58,14 @@ public record DepotService(
             fileList.forEach(entry -> {
                 try {
                     var basicFileAttributes = Files.readAttributes(entry, BasicFileAttributes.class);
-                    entries.add(new FileDto(entry.getFileName().toString(), Files.isDirectory(entry) ? FileDto.FileType.FOLDER : FileDto.FileType.FILE, basicFileAttributes.lastModifiedTime().toInstant()));
+                    entries.add(
+                            new FileDto(
+                                    entry.getFileName().toString(),
+                                    Files.isDirectory(entry) ? FileDto.FileType.FOLDER : FileDto.FileType.FILE,
+                                    Files.isDirectory(entry) ? 0 : basicFileAttributes.size(),
+                                    basicFileAttributes.lastModifiedTime().toInstant()
+                            )
+                    );
                 } catch (IOException e) {
                     log.error("Could not read attributes of {}", fullPath);
                 }

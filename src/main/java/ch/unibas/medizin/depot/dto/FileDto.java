@@ -9,6 +9,7 @@ import java.time.Instant;
 @Schema(name = "File")
 public record FileDto(@NotBlank String name,
                       @NotNull FileType type,
+                      @NotNull Long size,
                       @NotNull Instant modified) {
 
     public enum FileType {
