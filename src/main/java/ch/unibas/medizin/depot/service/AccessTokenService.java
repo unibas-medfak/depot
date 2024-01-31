@@ -30,19 +30,19 @@ public record AccessTokenService(
 
     private static final Logger log = LoggerFactory.getLogger(AccessTokenService.class);
 
-    public AccessTokenResponseDto requestTokenString(AccessTokenRequestDto accessTokenRequestDto) {
-        var token = getToken(accessTokenRequestDto);
+    public AccessTokenResponseDto requestTokenString(final AccessTokenRequestDto accessTokenRequestDto) {
+        final var token = getToken(accessTokenRequestDto);
         return new AccessTokenResponseDto(token);
     }
 
-    public byte[] requestTokenQr(AccessTokenRequestDto accessTokenRequestDto) {
-        var host = depotProperties.getHost();
-        var token = getToken(accessTokenRequestDto);
-        var qrCodePayload = new QrCodePayloadDto(host, token);
+    public byte[] requestTokenQr(final AccessTokenRequestDto accessTokenRequestDto) {
+        final var host = depotProperties.getHost();
+        final var token = getToken(accessTokenRequestDto);
+        final var qrCodePayload = new QrCodePayloadDto(host, token);
 
         try {
-            var jsonQrCodePayload = objectMapper.writeValueAsString(qrCodePayload);
-            var qrCode = QrCode.encodeText(jsonQrCodePayload, QrCode.Ecc.LOW);
+            final var jsonQrCodePayload = objectMapper.writeValueAsString(qrCodePayload);
+            final var qrCode = QrCode.encodeText(jsonQrCodePayload, QrCode.Ecc.LOW);
             return toImage(qrCode);
         } catch (JsonProcessingException e) {
             log.error("Could not encode payload", e);
@@ -51,9 +51,9 @@ public record AccessTokenService(
     }
 
     private byte[] toImage(QrCode qr) {
-        var scale = 4;
-        var border = 10;
-        var result = new BufferedImage((qr.size + border * 2) * scale, (qr.size + border * 2) * scale, BufferedImage.TYPE_INT_RGB);
+        final var scale = 4;
+        final var border = 10;
+        final var result = new BufferedImage((qr.size + border * 2) * scale, (qr.size + border * 2) * scale, BufferedImage.TYPE_INT_RGB);
 
         for (int y = 0; y < result.getHeight(); y++) {
             for (int x = 0; x < result.getWidth(); x++) {
@@ -62,7 +62,7 @@ public record AccessTokenService(
             }
         }
 
-        var byteArrayOutputStream = new ByteArrayOutputStream();
+        final var byteArrayOutputStream = new ByteArrayOutputStream();
         try {
             ImageIO.write(result, "png", byteArrayOutputStream);
         } catch (IOException e) {
@@ -81,11 +81,11 @@ public record AccessTokenService(
                 accessTokenRequestDto.mode(),
                 accessTokenRequestDto.expirationDate());
 
-        var logString = String.format("%s %s %s", accessTokenRequestDto.realm(), accessTokenRequestDto.mode(), accessTokenRequestDto.expirationDate());
+        final var logString = String.format("%s %s %s", accessTokenRequestDto.realm(), accessTokenRequestDto.mode(), accessTokenRequestDto.expirationDate());
         logService.log(LogService.EventType.TOKEN, accessTokenRequestDto.subject(), logString);
 
-        var zoneId = StringUtils.hasText(depotProperties.getTimeZone()) ? ZoneId.of(depotProperties.getTimeZone()) : ZoneId.systemDefault();
-        var expirationDate = accessTokenRequestDto.expirationDate().atStartOfDay().atZone(zoneId).toInstant();
+        final var zoneId = StringUtils.hasText(depotProperties.getTimeZone()) ? ZoneId.of(depotProperties.getTimeZone()) : ZoneId.systemDefault();
+        final var expirationDate = accessTokenRequestDto.expirationDate().atStartOfDay().atZone(zoneId).toInstant();
 
         return JWT.create()
                 .withIssuer("depot")

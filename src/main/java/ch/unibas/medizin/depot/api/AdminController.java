@@ -36,22 +36,22 @@ public class AdminController {
     @PostMapping("/register")
     @Operation(summary = "Retrieve a token which provides access to the given realm")
     public ResponseEntity<AccessTokenResponseDto> register(@RequestBody final AccessTokenRequestDto accessTokenRequestDto) {
-        var violations = validator.validate(accessTokenRequestDto);
+        final var violations = validator.validate(accessTokenRequestDto);
 
         for (var violation : violations) {
             throw new InvlidRequestException(violation.getPropertyPath().toString(), violation.getInvalidValue().toString(), violation.getMessage());
         }
 
-        var accessTokenResponseDto = accessTokenService.requestTokenString(accessTokenRequestDto);
+        final var accessTokenResponseDto = accessTokenService.requestTokenString(accessTokenRequestDto);
         return ResponseEntity.ok(accessTokenResponseDto);
     }
 
     @PostMapping(value = "/qr", produces = MediaType.IMAGE_PNG_VALUE)
     @Operation(summary = "Retrieve a QR code which provides access to the given realm")
     public byte[] qr(@RequestBody final AccessTokenRequestDto accessTokenRequestDto) {
-        var violations = validator.validate(accessTokenRequestDto);
+        final var violations = validator.validate(accessTokenRequestDto);
 
-        for (var violation : violations) {
+        for (final var violation : violations) {
             throw new InvlidRequestException(violation.getPropertyPath().toString(), violation.getInvalidValue().toString(), violation.getMessage());
         }
 
@@ -61,9 +61,9 @@ public class AdminController {
     @PostMapping("/log")
     @Operation(summary = "Retrieve the last 100 logged events")
     public List<String> log(@RequestBody final LogRequestDto logRequestDto) {
-        var violations = validator.validate(logRequestDto);
+        final var violations = validator.validate(logRequestDto);
 
-        for (var violation : violations) {
+        for (final var violation : violations) {
             throw new InvlidRequestException(violation.getPropertyPath().toString(), violation.getInvalidValue().toString(), violation.getMessage());
         }
 

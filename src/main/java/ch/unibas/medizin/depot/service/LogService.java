@@ -21,20 +21,20 @@ public class LogService {
     private final Logger log;
 
     public LogService(DepotProperties depotProperties) {
-        var loggerContext = (LoggerContext) LoggerFactory.getILoggerFactory();
-        var patternLayoutEncoder = new PatternLayoutEncoder();
+        final var loggerContext = (LoggerContext) LoggerFactory.getILoggerFactory();
+        final var patternLayoutEncoder = new PatternLayoutEncoder();
         patternLayoutEncoder.setPattern("%date %msg%n");
         patternLayoutEncoder.setContext(loggerContext);
         patternLayoutEncoder.start();
 
-        var fileAppender = new FileAppender<ILoggingEvent>();
-        var logfile = depotProperties.getBaseDirectory().resolve(DepotUtil.LOGFILE_NAME).toString();
+        final var fileAppender = new FileAppender<ILoggingEvent>();
+        final var logfile = depotProperties.getBaseDirectory().resolve(DepotUtil.LOGFILE_NAME).toString();
         fileAppender.setFile(logfile);
         fileAppender.setEncoder(patternLayoutEncoder);
         fileAppender.setContext(loggerContext);
         fileAppender.start();
 
-        var logger = loggerContext.getLogger(LogService.class.getName());
+        final var logger = loggerContext.getLogger(LogService.class.getName());
         logger.setAdditive(false);
         logger.setLevel(Level.INFO);
         logger.addAppender(fileAppender);
@@ -42,7 +42,7 @@ public class LogService {
         this.log = logger;
     }
 
-    public void log(EventType type, String subject, String description) {
+    public void log(final EventType type, final String subject, final String description) {
         log.info("{} {} {}", type, subject, description);
     }
 

@@ -89,6 +89,7 @@ public class ApiController {
             log.error("Invalid request - delete path {}", path);
             throw new InvlidRequestException("path", path, INVALID_REQUEST_DETAIL);
         }
+
         depotService.delete(path);
         return new ResponseEntity<>(HttpStatus.OK);
     }

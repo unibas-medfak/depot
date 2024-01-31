@@ -29,30 +29,30 @@ public class JWTAuthorizationFilter extends OncePerRequestFilter {
 
     private final JWTVerifier verifier;
 
-    public JWTAuthorizationFilter(DepotProperties depotProperties) {
-        var algorithm = Algorithm.HMAC256(depotProperties.getJwtSecret());
+    public JWTAuthorizationFilter(final DepotProperties depotProperties) {
+        final var algorithm = Algorithm.HMAC256(depotProperties.getJwtSecret());
         this.verifier = JWT.require(algorithm).withIssuer("depot").build();
     }
 
     @Override
-    protected void doFilterInternal(@NonNull HttpServletRequest httpServletRequest, @NonNull HttpServletResponse httpServletResponse, @NonNull FilterChain filterChain) throws ServletException, IOException {
+    protected void doFilterInternal(final @NonNull HttpServletRequest httpServletRequest, final @NonNull HttpServletResponse httpServletResponse, final @NonNull FilterChain filterChain) throws ServletException, IOException {
         if (checkJWTToken(httpServletRequest)) {
-            var decodedJWT = validateToken(httpServletRequest);
+            final var decodedJWT = validateToken(httpServletRequest);
             setUpSpringAuthentication(decodedJWT);
         }
         filterChain.doFilter(httpServletRequest, httpServletResponse);
     }
 
-    private DecodedJWT validateToken(HttpServletRequest httpServletRequest) {
-        var token = httpServletRequest.getHeader(HEADER).replace(PREFIX, "");
+    private DecodedJWT validateToken(final HttpServletRequest httpServletRequest) {
+        final var token = httpServletRequest.getHeader(HEADER).replace(PREFIX, "");
         return verifier.verify(token);
     }
 
-    private void setUpSpringAuthentication(DecodedJWT decodedJWT) {
-        var realmAndSubject = String.format("%s%s%s", decodedJWT.getClaim("realm").asString(),
+    private void setUpSpringAuthentication(final DecodedJWT decodedJWT) {
+        final var realmAndSubject = String.format("%s%s%s", decodedJWT.getClaim("realm").asString(),
                 String.valueOf(Character.LINE_SEPARATOR), decodedJWT.getSubject());
 
-        var grantedAuthorities = new ArrayList<GrantedAuthority>();
+        final var grantedAuthorities = new ArrayList<GrantedAuthority>();
         if (decodedJWT.getClaim("mode").asString().contains("r")) {
             grantedAuthorities.add(new SimpleGrantedAuthority("ROLE_READ"));
         }
@@ -63,12 +63,12 @@ public class JWTAuthorizationFilter extends OncePerRequestFilter {
             grantedAuthorities.add(new SimpleGrantedAuthority("ROLE_DELETE"));
         }
 
-        var authenticationToken = new UsernamePasswordAuthenticationToken(realmAndSubject, null, grantedAuthorities);
+        final var authenticationToken = new UsernamePasswordAuthenticationToken(realmAndSubject, null, grantedAuthorities);
         SecurityContextHolder.getContext().setAuthentication(authenticationToken);
     }
 
-    private boolean checkJWTToken(HttpServletRequest httpServletRequest) {
-        var authenticationHeader = httpServletRequest.getHeader(HEADER);
+    private boolean checkJWTToken(final HttpServletRequest httpServletRequest) {
+        final var authenticationHeader = httpServletRequest.getHeader(HEADER);
         return authenticationHeader != null && authenticationHeader.startsWith(PREFIX);
     }
 }
