@@ -23,6 +23,7 @@ import java.nio.file.StandardOpenOption;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.util.Arrays;
+import java.util.Objects;
 import java.util.Random;
 
 import static org.junit.jupiter.api.Assertions.*;
@@ -443,6 +444,81 @@ public class ApiControllerTests {
         var response = restTemplate.exchange(getUrl, HttpMethod.GET, requestEntity, String.class);
 
         assertEquals(HttpStatus.UNAUTHORIZED, response.getStatusCode());
+    }
+
+    @Test
+    public void Deny_write_only_delete() {
+        var registerRequest = new HttpEntity<>(new AccessTokenRequestDto("admin_secret", "realm", "subject", "wr", tomorrow));
+        var registerResponse = restTemplate.postForEntity(baseUrl + port + "/admin/register", registerRequest, AccessTokenResponseDto.class);
+
+        assertNotNull(registerResponse.getBody());
+        var headers = getHeaders(registerResponse.getBody().token());
+
+        var requestEntity = new HttpEntity<Void>(headers);
+
+        var deleteUrl = baseUrl + port + "/delete?path=/no.txt";
+
+        var response = restTemplate.exchange(deleteUrl, HttpMethod.GET, requestEntity, Void.class);
+
+        assertEquals(HttpStatus.UNAUTHORIZED, response.getStatusCode());
+    }
+
+    @Test
+    public void Delete() throws IOException {
+        FileUtils.deleteDirectory(depotProperties.getBaseDirectory().resolve("realm").toFile());
+
+        var registerRequest = new HttpEntity<>(new AccessTokenRequestDto("admin_secret", "realm", "subject", "rdw", tomorrow));
+        var registerResponse = restTemplate.postForEntity(baseUrl + port + "/admin/register", registerRequest, AccessTokenResponseDto.class);
+
+        assertNotNull(registerResponse.getBody());
+        var headers = getHeaders(registerResponse.getBody().token());
+        headers.setContentType(MediaType.MULTIPART_FORM_DATA);
+
+        var body1 = new LinkedMultiValueMap<String, Object>();
+        var fileSize1 = 10 * 1024 * 1024;
+        var randomFile1 = randomFile(fileSize1);
+        var resource1 = new FileSystemResource(randomFile1);
+        body1.add("file", resource1);
+
+        var requestEntity1 = new HttpEntity<MultiValueMap<String, Object>>(body1, headers);
+        var putUrl1 = baseUrl + port + "/put?path=//test/deleteMe//&hash=true";
+        restTemplate.postForEntity(putUrl1, requestEntity1, PutFileResponseDto.class);
+
+        var body2 = new LinkedMultiValueMap<String, Object>();
+        var fileSize2 = 10 * 1024 * 1024;
+        var randomFile2 = randomFile(fileSize2);
+        var resource2 = new FileSystemResource(randomFile2);
+        body2.add("file", resource2);
+
+        var requestEntity2 = new HttpEntity<MultiValueMap<String, Object>>(body2, headers);
+        var putUrl2 = baseUrl + port + "/put?path=//test/deleteMe//&hash=true";
+        restTemplate.postForEntity(putUrl2, requestEntity2, PutFileResponseDto.class);
+
+        headers.setContentType(MediaType.APPLICATION_JSON);
+        var listRequest = new HttpEntity<>(headers);
+        var files = restTemplate.exchange(baseUrl + port + "/list?path=///test//deleteMe", HttpMethod.GET, listRequest, FileDto[].class);
+        assertEquals(2, Arrays.stream(Objects.requireNonNull(files.getBody())).count());
+
+        var deleteRequest1 = new HttpEntity<>(headers);
+        var deleteResponse1 = restTemplate.exchange(baseUrl + port + "/delete?path=//test//deleteMe///" + randomFile1.getName(), HttpMethod.GET, deleteRequest1, Void.class);
+        assertEquals(HttpStatus.OK, deleteResponse1.getStatusCode());
+        files = restTemplate.exchange(baseUrl + port + "/list?path=///test//deleteMe", HttpMethod.GET, listRequest, FileDto[].class);
+        assertEquals(1, Arrays.stream(Objects.requireNonNull(files.getBody())).count());
+
+        var deleteRequest2 = new HttpEntity<>(headers);
+        var deleteResponse2 = restTemplate.exchange(baseUrl + port + "/delete?path=", HttpMethod.GET, deleteRequest2, Void.class);
+        assertEquals(HttpStatus.OK, deleteResponse2.getStatusCode());
+        files = restTemplate.exchange(baseUrl + port + "/list?path=///", HttpMethod.GET, listRequest, FileDto[].class);
+        assertEquals(0, Arrays.stream(Objects.requireNonNull(files.getBody())).count());
+
+        var deleteResponse3 = restTemplate.exchange(baseUrl + port + "/delete?path=", HttpMethod.GET, deleteRequest2, Void.class);
+        assertEquals(HttpStatus.OK, deleteResponse3.getStatusCode());
+
+        var deleteResponse4 = restTemplate.exchange(baseUrl + port + "/delete?path=unknown", HttpMethod.GET, deleteRequest2, Void.class);
+        assertEquals(HttpStatus.OK, deleteResponse4.getStatusCode());
+
+        var deleteResponse5 = restTemplate.exchange(baseUrl + port + "/delete?path=../../inéVäli$", HttpMethod.GET, deleteRequest2, Void.class);
+        assertEquals(HttpStatus.BAD_REQUEST, deleteResponse5.getStatusCode());
     }
 
     private HttpHeaders getHeaders(String token) {

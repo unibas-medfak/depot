@@ -15,7 +15,7 @@ import org.springframework.stereotype.Service;
 public class LogService {
 
     public enum EventType {
-        TOKEN, GET, PUT, LIST
+        TOKEN, GET, PUT, LIST, DELETE
     }
 
     private final Logger log;

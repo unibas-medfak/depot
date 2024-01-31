@@ -32,7 +32,11 @@ public class AccessTokenRequestValidationTest {
         violations = validator.validate(accessTokenRequestDto);
         assertFalse(violations.isEmpty());
 
-        accessTokenRequestDto = new AccessTokenRequestDto("pw", "56aBc1é3", "user", "rw", LocalDate.now().minusDays(1));
+        accessTokenRequestDto = new AccessTokenRequestDto("pw", "56aBc13", "user", "rwD", LocalDate.now().plusDays(1));
+        violations = validator.validate(accessTokenRequestDto);
+        assertTrue(violations.isEmpty());
+
+        accessTokenRequestDto = new AccessTokenRequestDto("pw", "56aBc1é3", "user", "wr", LocalDate.now().minusDays(1));
         violations = validator.validate(accessTokenRequestDto);
         assertFalse(violations.isEmpty());
 

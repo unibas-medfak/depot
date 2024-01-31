@@ -18,13 +18,13 @@ public class DepotServiceTests {
     private DepotService depotService;
 
     @PostConstruct
-    void setGlobalSecurityContext() {
+    public void setGlobalSecurityContext() {
         SecurityContextHolder.setStrategyName(SecurityContextHolder.MODE_INHERITABLETHREADLOCAL);
     }
 
     @Test
     @WithMockUser(username = "realm" + Character.LINE_SEPARATOR + "subject")
-    void Concurrent_file_write() {
+    public void Concurrent_file_write() {
         var sizeInBytes = 10 * 1024 * 1024;
 
         try (var executor = Executors.newFixedThreadPool(10)) {

@@ -59,6 +59,9 @@ public class JWTAuthorizationFilter extends OncePerRequestFilter {
         if (decodedJWT.getClaim("mode").asString().contains("w")) {
             grantedAuthorities.add(new SimpleGrantedAuthority("ROLE_WRITE"));
         }
+        if (decodedJWT.getClaim("mode").asString().contains("d")) {
+            grantedAuthorities.add(new SimpleGrantedAuthority("ROLE_DELETE"));
+        }
 
         var authenticationToken = new UsernamePasswordAuthenticationToken(realmAndSubject, null, grantedAuthorities);
         SecurityContextHolder.getContext().setAuthentication(authenticationToken);

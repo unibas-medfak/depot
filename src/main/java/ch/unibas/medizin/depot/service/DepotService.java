@@ -16,6 +16,7 @@ import org.springframework.core.io.FileSystemResource;
 import org.springframework.core.io.Resource;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
+import org.springframework.util.FileSystemUtils;
 import org.springframework.util.StringUtils;
 import org.springframework.web.multipart.MultipartFile;
 
@@ -71,6 +72,9 @@ public record DepotService(
                 }
             });
         } catch (IOException e) {
+            if (normalizedPath.toString().isBlank()) {
+                return List.of();
+            }
             log.info("No such path {}", fullPath);
             throw new PathNotFoundException(path);
         }
@@ -139,6 +143,23 @@ public record DepotService(
         } catch (Exception e) {
             throw new RuntimeException("Could not store the file. " + e.getMessage());
         }
+    }
+
+    public void delete(String path) {
+        var normalizedFile = DepotUtil.normalizePath(path);
+        var basePathAndSubject = getBasePathAndSubject();
+        var fullPath = basePathAndSubject.basePath().resolve(normalizedFile);
+
+        try {
+            FileSystemUtils.deleteRecursively(fullPath);
+        }
+        catch (IOException e) {
+            log.error("Could not delete file or folder", e);
+            throw new RuntimeException("Could not delete file or folder.");
+        }
+
+        logService.log(LogService.EventType.DELETE, basePathAndSubject.subject(), fullPath.toString());
+        log.info("{} delete {}", basePathAndSubject.subject(), fullPath);
     }
 
     private record BasePathAndSubject(Path basePath, String subject) {
