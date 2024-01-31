@@ -16,6 +16,7 @@ import org.springframework.core.io.FileSystemResource;
 import org.springframework.core.io.Resource;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
+import org.springframework.util.FileSystemUtils;
 import org.springframework.util.StringUtils;
 import org.springframework.web.multipart.MultipartFile;
 
@@ -44,20 +45,20 @@ public record DepotService(
         }
     }
 
-    public List<FileDto> list(String path) {
-        var subjectAndBasePath = getBasePathAndSubject();
-        var normalizedPath = DepotUtil.normalizePath(path);
-        var fullPath = subjectAndBasePath.basePath().resolve(normalizedPath);
+    public List<FileDto> list(final String path) {
+        final var subjectAndBasePath = getBasePathAndSubject();
+        final var normalizedPath = DepotUtil.normalizePath(path);
+        final var fullPath = subjectAndBasePath.basePath().resolve(normalizedPath);
 
         logService.log(LogService.EventType.LIST, subjectAndBasePath.subject(), fullPath.toString());
         log.info("{} list {}", subjectAndBasePath.subject(), fullPath);
 
-        var entries = new LinkedList<FileDto>();
+        final var entries = new LinkedList<FileDto>();
 
-        try (var fileList = Files.list(fullPath)) {
+        try (final var fileList = Files.list(fullPath)) {
             fileList.forEach(entry -> {
                 try {
-                    var basicFileAttributes = Files.readAttributes(entry, BasicFileAttributes.class);
+                    final var basicFileAttributes = Files.readAttributes(entry, BasicFileAttributes.class);
                     entries.add(
                             new FileDto(
                                     entry.getFileName().toString(),
@@ -71,6 +72,9 @@ public record DepotService(
                 }
             });
         } catch (IOException e) {
+            if (normalizedPath.toString().isBlank()) {
+                return List.of();
+            }
             log.info("No such path {}", fullPath);
             throw new PathNotFoundException(path);
         }
@@ -78,11 +82,11 @@ public record DepotService(
         return entries;
     }
 
-    public Resource get(String file) {
-        var normalizedFile = DepotUtil.normalizePath(file);
-        var basePathAndSubject = getBasePathAndSubject();
-        var fullPath = basePathAndSubject.basePath().resolve(normalizedFile);
-        var resource = new FileSystemResource(fullPath);
+    public Resource get(final String file) {
+        final var normalizedFile = DepotUtil.normalizePath(file);
+        final var basePathAndSubject = getBasePathAndSubject();
+        final var fullPath = basePathAndSubject.basePath().resolve(normalizedFile);
+        final var resource = new FileSystemResource(fullPath);
 
         logService.log(LogService.EventType.GET, basePathAndSubject.subject(), fullPath.toString());
         log.info("{} get {}", basePathAndSubject.subject(), fullPath);
@@ -94,11 +98,11 @@ public record DepotService(
         }
     }
 
-    public PutFileResponseDto put(MultipartFile file, String path, boolean hash) {
-        var basePathAndSubject = getBasePathAndSubject();
-        var normalizedPath = DepotUtil.normalizePath(path);
-        var fullPath = basePathAndSubject.basePath().resolve(normalizedPath);
-        var fullPathAndFile = fullPath.resolve(Objects.requireNonNull(file.getOriginalFilename()));
+    public PutFileResponseDto put(final MultipartFile file, final String path, final boolean hash) {
+        final var basePathAndSubject = getBasePathAndSubject();
+        final var normalizedPath = DepotUtil.normalizePath(path);
+        final var fullPath = basePathAndSubject.basePath().resolve(normalizedPath);
+        final var fullPathAndFile = fullPath.resolve(Objects.requireNonNull(file.getOriginalFilename()));
 
         logService.log(LogService.EventType.PUT, basePathAndSubject.subject(), fullPathAndFile.toString());
         log.info("{} put {}", basePathAndSubject.subject(), fullPathAndFile);
@@ -123,33 +127,45 @@ public record DepotService(
         }
 
         try {
-            var tmpFile = Files.createTempFile(depotProperties.getBaseDirectory().resolve("tmp"), "depot", "");
+            final var tmpFile = Files.createTempFile(depotProperties.getBaseDirectory().resolve("tmp"), "depot", "");
             CopyOption[] options = { StandardCopyOption.REPLACE_EXISTING };
 
-            var sha256 = "-";
-            if (hash) {
-                sha256 = DigestUtils.sha256Hex(file.getInputStream());
-            }
-
-            var bytes = Files.copy(file.getInputStream(), tmpFile, options);
+            final var bytes = Files.copy(file.getInputStream(), tmpFile, options);
 
             Files.move(tmpFile, fullPathAndFile, StandardCopyOption.ATOMIC_MOVE);
 
-            return new PutFileResponseDto(bytes, sha256);
+            return new PutFileResponseDto(bytes, hash ? DigestUtils.sha256Hex(file.getInputStream()) : "-");
         } catch (Exception e) {
             throw new RuntimeException("Could not store the file. " + e.getMessage());
         }
+    }
+
+    public void delete(final String path) {
+        final var normalizedFile = DepotUtil.normalizePath(path);
+        final var basePathAndSubject = getBasePathAndSubject();
+        final var fullPath = basePathAndSubject.basePath().resolve(normalizedFile);
+
+        try {
+            FileSystemUtils.deleteRecursively(fullPath);
+        }
+        catch (IOException e) {
+            log.error("Could not delete file or folder", e);
+            throw new RuntimeException("Could not delete file or folder.");
+        }
+
+        logService.log(LogService.EventType.DELETE, basePathAndSubject.subject(), fullPath.toString());
+        log.info("{} delete {}", basePathAndSubject.subject(), fullPath);
     }
 
     private record BasePathAndSubject(Path basePath, String subject) {
     }
 
     private BasePathAndSubject getBasePathAndSubject() {
-        var authentication = SecurityContextHolder.getContext().getAuthentication();
-        var realmAndSubject = StringUtils.split(authentication.getName(), String.valueOf(Character.LINE_SEPARATOR));
+        final var authentication = SecurityContextHolder.getContext().getAuthentication();
+        final var realmAndSubject = StringUtils.split(authentication.getName(), String.valueOf(Character.LINE_SEPARATOR));
         assert realmAndSubject != null;
-        var realm = realmAndSubject[0];
-        var rootAndRealmPath = depotProperties.getBaseDirectory().resolve(realm);
+        final var realm = realmAndSubject[0];
+        final var rootAndRealmPath = depotProperties.getBaseDirectory().resolve(realm);
         return new BasePathAndSubject(rootAndRealmPath, realmAndSubject[1]);
     }
 

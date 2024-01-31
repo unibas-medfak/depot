@@ -7,57 +7,57 @@ public interface DepotUtil {
 
     String LOGFILE_NAME = "depot-access.log";
 
-    static Path normalizePath(String path) {
-        path = path.replaceAll(" ", "");
+    static Path normalizePath(final String path) {
+        var normalizedPath = path.replaceAll(" ", "");
 
         var changed = true;
 
         while (changed) {
-            var after = path.replaceAll("/[.]", "/").replaceAll("[.]/", "/");
-            if (path.equals(after)) {
+            var after = normalizedPath.replaceAll("/[.]", "/").replaceAll("[.]/", "/");
+            if (normalizedPath.equals(after)) {
                 changed = false;
             }
-            path = after;
+            normalizedPath = after;
         }
 
         return Paths.get(
-                path
+                normalizedPath
                 .replaceAll("/+", "/")
                 .replaceAll("^/", "")
                 .replaceAll("/$", "")
         );
     }
 
-    static boolean isValidAbsolutPath(String candidate) {
-        var candidateAsPath = Paths.get(candidate);
-        var candidatePath = candidateAsPath.getParent();
+    static boolean isValidAbsolutPath(final String candidate) {
+        final var candidateAsPath = Paths.get(candidate);
+        final var candidatePath = candidateAsPath.getParent();
 
         if (candidatePath != null && !isValidPath(candidatePath.toString())) {
             return false;
         }
 
-        var candidateFilename = candidateAsPath.getFileName().toString();
+        final var candidateFilename = candidateAsPath.getFileName().toString();
 
         return isValidFilename(candidateFilename);
     }
 
-    static boolean isValidRealm(String candidate) {
+    static boolean isValidRealm(final String candidate) {
         return isValid(candidate, false);
     }
 
-    static boolean isValidFilename(String candidate) {
+    static boolean isValidFilename(final String candidate) {
         return isValid(candidate, false);
     }
 
-    static boolean isValidPath(String candidate) {
+    static boolean isValidPath(final String candidate) {
         return isValid(candidate, true);
     }
 
-    private static boolean isValid(String candidate, boolean allowSlash) {
-        int length = candidate.length();
+    private static boolean isValid(final String candidate, final boolean allowSlash) {
+        final int length = candidate.length();
 
         for (int i = 0; i < length; i++) {
-            var candidateChar = candidate.charAt(i);
+            final var candidateChar = candidate.charAt(i);
             if (!Character.isLetterOrDigit(candidateChar)
                     && candidateChar != '.'
                     && candidateChar != '_'

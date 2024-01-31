@@ -15,7 +15,7 @@ public record AuthorizationService(
 
     private static final Logger log = LoggerFactory.getLogger(AuthorizationService.class);
 
-    public void throwIfAdminPasswordMismatches(String givenAdminPassword) {
+    public void throwIfAdminPasswordMismatches(final String givenAdminPassword) {
         if (!passwordEncoder.matches(givenAdminPassword, depotProperties.getAdminPassword())) {
             log.error("Request with invalid admin password");
             throw new AccessDeniedException("Invalid password");

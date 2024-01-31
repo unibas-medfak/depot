@@ -20,10 +20,10 @@ public class UiController {
 
     private final String banner;
 
-    public UiController(VersionHolder versionHolder) {
+    public UiController(final VersionHolder versionHolder) {
         this.versionHolder = versionHolder;
 
-        try (var reader = new InputStreamReader(new ClassPathResource("banner.txt").getInputStream(), StandardCharsets.UTF_8)) {
+        try (final var reader = new InputStreamReader(new ClassPathResource("banner.txt").getInputStream(), StandardCharsets.UTF_8)) {
             this.banner = FileCopyUtils.copyToString(reader);
         } catch (IOException e) {
             throw new UncheckedIOException(e);

@@ -20,6 +20,6 @@ import java.time.LocalDate;
 public record AccessTokenRequestDto(@Schema(example = "Top$ec3rit!") @NotBlank @Size(max = 64) String password,
                                     @Schema(description = "root folder", example = "exam") @NotBlank @Size(max = 64) @RealmConstraint String realm,
                                     @Schema(description = "client identifier", example = "iPad #213") @NotBlank @Size(max = 64) String subject,
-                                    @Schema(description = "access mode", allowableValues = {"r","w","rw"}) @NotBlank @ModeConstraint String mode,
+                                    @Schema(description = "access mode", allowableValues = {"r", "w", "d", "rw", "rd", "wd", "rwd"}) @NotBlank @ModeConstraint String mode,
                                     @Schema(description = "date of expiration", example = "2025-12-31") @NotNull @Future @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "yyyy-MM-dd") @JsonDeserialize(using = LocalDateDeserializer.class) @JsonSerialize(using = LocalDateSerializer.class) LocalDate expirationDate) {
 }

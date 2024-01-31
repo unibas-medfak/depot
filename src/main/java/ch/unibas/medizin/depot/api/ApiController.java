@@ -11,6 +11,7 @@ import io.swagger.v3.oas.annotations.security.SecurityRequirement;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.core.io.Resource;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -78,6 +79,19 @@ public class ApiController {
         }
 
         return ResponseEntity.ok(depotService.put(file, path, hash));
+    }
+
+    @GetMapping("/delete")
+    @PreAuthorize("hasRole('DELETE')")
+    @Operation(summary = "Delete a file or folder at the given path")
+    public ResponseEntity<Void> delete(@Parameter(description = "Filename or Folder to be delete", example = "pictures/cats/cat.png") @RequestParam("path") final String path) {
+        if (!DepotUtil.isValidPath(path)) {
+            log.error("Invalid request - delete path {}", path);
+            throw new InvlidRequestException("path", path, INVALID_REQUEST_DETAIL);
+        }
+
+        depotService.delete(path);
+        return new ResponseEntity<>(HttpStatus.OK);
     }
 
 }
