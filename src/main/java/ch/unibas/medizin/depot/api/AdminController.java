@@ -3,7 +3,7 @@ package ch.unibas.medizin.depot.api;
 import ch.unibas.medizin.depot.dto.AccessTokenRequestDto;
 import ch.unibas.medizin.depot.dto.AccessTokenResponseDto;
 import ch.unibas.medizin.depot.dto.LogRequestDto;
-import ch.unibas.medizin.depot.exception.InvlidRequestException;
+import ch.unibas.medizin.depot.exception.InvalidRequestException;
 import ch.unibas.medizin.depot.service.AccessTokenService;
 import ch.unibas.medizin.depot.service.AdminService;
 import io.swagger.v3.oas.annotations.Operation;
@@ -39,7 +39,7 @@ public class AdminController {
         final var violations = validator.validate(accessTokenRequestDto);
 
         for (var violation : violations) {
-            throw new InvlidRequestException(violation.getPropertyPath().toString(), violation.getInvalidValue().toString(), violation.getMessage());
+            throw new InvalidRequestException(violation.getPropertyPath().toString(), violation.getInvalidValue().toString(), violation.getMessage());
         }
 
         final var accessTokenResponseDto = accessTokenService.requestTokenString(accessTokenRequestDto);
@@ -52,7 +52,7 @@ public class AdminController {
         final var violations = validator.validate(accessTokenRequestDto);
 
         for (final var violation : violations) {
-            throw new InvlidRequestException(violation.getPropertyPath().toString(), violation.getInvalidValue().toString(), violation.getMessage());
+            throw new InvalidRequestException(violation.getPropertyPath().toString(), violation.getInvalidValue().toString(), violation.getMessage());
         }
 
         return accessTokenService.requestTokenQr(accessTokenRequestDto);
@@ -64,7 +64,7 @@ public class AdminController {
         final var violations = validator.validate(logRequestDto);
 
         for (final var violation : violations) {
-            throw new InvlidRequestException(violation.getPropertyPath().toString(), violation.getInvalidValue().toString(), violation.getMessage());
+            throw new InvalidRequestException(violation.getPropertyPath().toString(), violation.getInvalidValue().toString(), violation.getMessage());
         }
 
         return adminService.getLastLogLines(logRequestDto);

@@ -43,11 +43,11 @@ public record RestExceptionHandler() {
         return problemDetails;
     }
 
-    @ExceptionHandler(InvlidRequestException.class)
-    public ProblemDetail handleInvlidRequestException(final InvlidRequestException invlidRequestException) {
-        var problemDetails = ProblemDetail.forStatusAndDetail(HttpStatus.BAD_REQUEST, invlidRequestException.getLocalizedMessage());
+    @ExceptionHandler(InvalidRequestException.class)
+    public ProblemDetail handleInvlidRequestException(final InvalidRequestException invalidRequestException) {
+        var problemDetails = ProblemDetail.forStatusAndDetail(HttpStatus.BAD_REQUEST, invalidRequestException.getLocalizedMessage());
         problemDetails.setTitle("Invalid request");
-        problemDetails.setProperty(invlidRequestException.getPropertyPath(), invlidRequestException.getValue());
+        problemDetails.setProperty(invalidRequestException.getPropertyPath(), invalidRequestException.getValue());
         return problemDetails;
     }
 

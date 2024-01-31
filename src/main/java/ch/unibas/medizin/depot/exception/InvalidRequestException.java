@@ -1,12 +1,12 @@
 package ch.unibas.medizin.depot.exception;
 
-public class InvlidRequestException extends RuntimeException {
+public class InvalidRequestException extends RuntimeException {
 
     private final String propertyPath;
 
     private final String value;
 
-    public InvlidRequestException(String propertyPath, String value, String detail) {
+    public InvalidRequestException(String propertyPath, String value, String detail) {
         super(detail);
         this.propertyPath = propertyPath;
         this.value = value;

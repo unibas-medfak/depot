@@ -2,7 +2,7 @@ package ch.unibas.medizin.depot.api;
 
 import ch.unibas.medizin.depot.dto.FileDto;
 import ch.unibas.medizin.depot.dto.PutFileResponseDto;
-import ch.unibas.medizin.depot.exception.InvlidRequestException;
+import ch.unibas.medizin.depot.exception.InvalidRequestException;
 import ch.unibas.medizin.depot.service.DepotService;
 import ch.unibas.medizin.depot.util.DepotUtil;
 import io.swagger.v3.oas.annotations.Operation;
@@ -43,7 +43,7 @@ public class ApiController {
     public ResponseEntity<List<FileDto>> list(@Parameter(description = "Path to be listed", example = "pictures/cats") @RequestParam("path") final String path) {
         if (!DepotUtil.isValidPath(path)) {
             log.error("Invalid request - list path {}", path);
-            throw new InvlidRequestException("path", path, INVALID_REQUEST_DETAIL);
+            throw new InvalidRequestException("path", path, INVALID_REQUEST_DETAIL);
         }
 
         return ResponseEntity.ok(depotService.list(path));
@@ -55,7 +55,7 @@ public class ApiController {
     public Resource get(@Parameter(description = "Filename and Path to be retrieved", example = "pictures/cats/cat.png") @RequestParam("file") final String file) {
         if (!DepotUtil.isValidAbsolutPath(file)) {
             log.error("Invalid request - get file {}", file);
-            throw new InvlidRequestException("file", file, INVALID_REQUEST_DETAIL);
+            throw new InvalidRequestException("file", file, INVALID_REQUEST_DETAIL);
         }
 
         return depotService.get(file);
@@ -70,12 +70,12 @@ public class ApiController {
 
         if (!DepotUtil.isValidPath(path)) {
             log.error("Invalid request - put path {}", path);
-            throw new InvlidRequestException("path", path, INVALID_REQUEST_DETAIL);
+            throw new InvalidRequestException("path", path, INVALID_REQUEST_DETAIL);
         }
 
         if (!DepotUtil.isValidFilename(file.getOriginalFilename())) {
             log.error("Invalid request - put filename {}", file.getOriginalFilename());
-            throw new InvlidRequestException("filename", file.getOriginalFilename(), INVALID_REQUEST_DETAIL);
+            throw new InvalidRequestException("filename", file.getOriginalFilename(), INVALID_REQUEST_DETAIL);
         }
 
         return ResponseEntity.ok(depotService.put(file, path, hash));
@@ -87,7 +87,7 @@ public class ApiController {
     public ResponseEntity<Void> delete(@Parameter(description = "Filename or Folder to be delete", example = "pictures/cats/cat.png") @RequestParam("path") final String path) {
         if (!DepotUtil.isValidPath(path)) {
             log.error("Invalid request - delete path {}", path);
-            throw new InvlidRequestException("path", path, INVALID_REQUEST_DETAIL);
+            throw new InvalidRequestException("path", path, INVALID_REQUEST_DETAIL);
         }
 
         depotService.delete(path);
