@@ -23,14 +23,14 @@ public record AdminService(
     private static final Logger log = LoggerFactory.getLogger(AdminService.class);
 
     public List<String> getLastLogLines(final LogRequestDto logRequestDto) {
-        authorizationService.throwIfAdminPasswordMismatches(logRequestDto.password());
+        authorizationService.throwIfAdminPasswordMismatches(logRequestDto.tenant(), logRequestDto.password());
 
         log.info("Log requested");
 
         final var lastLogLines  = new ArrayList<String>();
 
         final var maxNumberOfLinesToRead = 100;
-        final var logfile = depotProperties.getBaseDirectory().resolve(DepotUtil.LOGFILE_NAME).toString();
+        final var logfile = depotProperties.getBaseDirectory().resolve(logRequestDto.tenant()).resolve(DepotUtil.LOGFILE_NAME).toString();
 
         try (ReversedLinesFileReader reader = ReversedLinesFileReader.builder().setFile(new File(logfile)).setCharset(StandardCharsets.UTF_8).get()) {
             String line;

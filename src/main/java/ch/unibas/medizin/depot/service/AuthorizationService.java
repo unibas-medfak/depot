@@ -1,6 +1,7 @@
 package ch.unibas.medizin.depot.service;
 
 import ch.unibas.medizin.depot.config.DepotProperties;
+import jakarta.annotation.Nonnull;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.security.access.AccessDeniedException;
@@ -15,10 +16,18 @@ public record AuthorizationService(
 
     private static final Logger log = LoggerFactory.getLogger(AuthorizationService.class);
 
-    public void throwIfAdminPasswordMismatches(final String givenAdminPassword) {
-        if (!passwordEncoder.matches(givenAdminPassword, depotProperties.getAdminPassword())) {
+    public void throwIfAdminPasswordMismatches(final @Nonnull String givenTenant, final @Nonnull String givenAdminPassword) {
+
+        var tenant = depotProperties.getTenants().get(givenTenant);
+
+        if (tenant == null) {
+            log.error("Request with invalid tenant");
+            throw new AccessDeniedException("Invalid credentials");
+        }
+
+        if (!passwordEncoder.matches(givenAdminPassword, tenant.password())) {
             log.error("Request with invalid admin password");
-            throw new AccessDeniedException("Invalid password");
+            throw new AccessDeniedException("Invalid credentials");
         }
     }
 

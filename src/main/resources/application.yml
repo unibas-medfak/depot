@@ -1,0 +1,21 @@
+depot:
+  base-directory: /var/local/depot
+  host: http://localhost:8080
+  time-zone: UTC
+
+spring:
+  threads:
+    virtual:
+      enabled: true
+  mvc:
+    problemdetails:
+      enabled:
+        true
+  servlet:
+    multipart:
+      max-request-size: 500MB
+      max-file-size: 500MB
+
+server:
+  forward-headers-strategy: framework
+

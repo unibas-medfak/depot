@@ -1,36 +1,48 @@
 package ch.unibas.medizin.depot.config;
 
+import jakarta.validation.constraints.NotEmpty;
+import jakarta.validation.constraints.NotNull;
 import org.apache.commons.lang3.SystemUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.FatalBeanException;
 import org.springframework.boot.context.properties.ConfigurationProperties;
-import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.util.StringUtils;
+import org.springframework.validation.annotation.Validated;
 
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Base64;
+import java.util.Map;
 import java.util.Random;
-import java.util.UUID;
 
+@Validated
 @ConfigurationProperties(prefix = "depot")
 public class DepotProperties {
 
     private static final Logger log = LoggerFactory.getLogger(DepotProperties.class);
 
+    @NotNull
     private final Path baseDirectory;
 
+    @NotEmpty
     private final String host;
 
+    @NotEmpty
     private final String timeZone;
 
-    private final String adminPassword;
-
+    @NotEmpty
     private final String jwtSecret;
 
-    public DepotProperties(Path baseDirectory, String host, String timeZone, String adminPassword, String jwtSecret) {
+    @NotEmpty
+    private final Map<String, Tenant> tenants;
+
+    @SuppressWarnings("unused")
+    public record Tenant(@NotEmpty String password) {
+    }
+
+    public DepotProperties(Path baseDirectory, String host, String timeZone, String jwtSecret, Map<String, Tenant> tenants) {
         if ("Mac OS X".equals(SystemUtils.OS_NAME)) {
             this.baseDirectory = Path.of("/tmp/depot");
         }
@@ -40,8 +52,8 @@ public class DepotProperties {
 
         this.host = host;
         this.timeZone = timeZone;
-        this.adminPassword = getAdminPassword(this.baseDirectory, adminPassword);
         this.jwtSecret = getJwtSecret(this.baseDirectory, jwtSecret);
+        this.tenants = tenants;
     }
 
     public String getHost() {
@@ -56,47 +68,12 @@ public class DepotProperties {
         return timeZone;
     }
 
-    public String getAdminPassword() {
-        return adminPassword;
+    public Map<String, Tenant> getTenants() {
+        return tenants;
     }
 
     public String getJwtSecret() {
         return jwtSecret;
-    }
-
-    private String getAdminPassword(Path baseDirectory, String adminPasswordFromProperties) {
-
-        if (StringUtils.hasText(adminPasswordFromProperties)) {
-            return adminPasswordFromProperties;
-        }
-
-        log.info("No admin password found in application.properties");
-
-        var adminPasswordFilename = ".adminpw";
-        var adminPasswordPath = baseDirectory.resolve(adminPasswordFilename);
-
-        try {
-            var encodedAdminPassword = Files.readString(adminPasswordPath);
-            log.info("Admin password read from {}", adminPasswordPath);
-            return encodedAdminPassword;
-        } catch (IOException e) {
-            log.info("No admin password found in {}", adminPasswordPath);
-
-            var randomPassword = UUID.randomUUID().toString();
-            log.error("!!!!!!!!!!!!!!!! ADMIN PASSWORD = {} !!!!!!!!!!!!!!!!", randomPassword);
-
-            var passwordEncoder = new BCryptPasswordEncoder();
-            var encodedAdminPassword = passwordEncoder.encode(randomPassword);
-
-            try {
-                Files.createDirectories(baseDirectory);
-                Files.writeString(baseDirectory.resolve(adminPasswordFilename), encodedAdminPassword);
-                return encodedAdminPassword;
-            } catch (IOException ex) {
-                log.error("Error while writing {}", adminPasswordFilename, ex);
-                throw new FatalBeanException("Failed to configure DepotProperties!");
-            }
-        }
     }
 
     private String getJwtSecret(Path baseDirectory, String jwtSecretFromProperties) {

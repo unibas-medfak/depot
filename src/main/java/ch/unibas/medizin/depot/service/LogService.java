@@ -11,6 +11,9 @@ import ch.unibas.medizin.depot.util.DepotUtil;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 
+import java.util.HashMap;
+import java.util.Map;
+
 @Service
 public class LogService {
 
@@ -18,32 +21,38 @@ public class LogService {
         TOKEN, GET, PUT, LIST, DELETE
     }
 
-    private final Logger log;
+    private final Map<String, Logger> loggers = new HashMap<>();
 
     public LogService(DepotProperties depotProperties) {
-        final var loggerContext = (LoggerContext) LoggerFactory.getILoggerFactory();
-        final var patternLayoutEncoder = new PatternLayoutEncoder();
-        patternLayoutEncoder.setPattern("%date %msg%n");
-        patternLayoutEncoder.setContext(loggerContext);
-        patternLayoutEncoder.start();
 
-        final var fileAppender = new FileAppender<ILoggingEvent>();
-        final var logfile = depotProperties.getBaseDirectory().resolve(DepotUtil.LOGFILE_NAME).toString();
-        fileAppender.setFile(logfile);
-        fileAppender.setEncoder(patternLayoutEncoder);
-        fileAppender.setContext(loggerContext);
-        fileAppender.start();
+        for (var tenant : depotProperties.getTenants().keySet()) {
+            var loggerContext = (LoggerContext) LoggerFactory.getILoggerFactory();
+            var patternLayoutEncoder = new PatternLayoutEncoder();
+            patternLayoutEncoder.setPattern("%date %msg%n");
+            patternLayoutEncoder.setContext(loggerContext);
+            patternLayoutEncoder.start();
 
-        final var logger = loggerContext.getLogger(LogService.class.getName());
-        logger.setAdditive(false);
-        logger.setLevel(Level.INFO);
-        logger.addAppender(fileAppender);
+            var fileAppender = new FileAppender<ILoggingEvent>();
+            var logfilePath = depotProperties.getBaseDirectory().resolve(tenant);
+            //noinspection ResultOfMethodCallIgnored
+            logfilePath.toFile().mkdirs();
+            var logfile = depotProperties.getBaseDirectory().resolve(tenant).resolve(DepotUtil.LOGFILE_NAME).toString();
+            fileAppender.setFile(logfile);
+            fileAppender.setEncoder(patternLayoutEncoder);
+            fileAppender.setContext(loggerContext);
+            fileAppender.start();
 
-        this.log = logger;
+            var logger = loggerContext.getLogger(tenant);
+            logger.setAdditive(false);
+            logger.setLevel(Level.INFO);
+            logger.addAppender(fileAppender);
+
+            loggers.put(tenant, logger);
+        }
     }
 
-    public void log(final EventType type, final String subject, final String description) {
-        log.info("{} {} {}", type, subject, description);
+    public void log(final String tenant, final EventType type, final String subject, final String description) {
+        loggers.get(tenant).info("{} {} {}", type, subject, description);
     }
 
 }

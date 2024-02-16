@@ -18,10 +18,10 @@ public class DepotUtilTests {
     }
 
     @Test
-    void validRealm() {
-        assertTrue(DepotUtil.isValidRealm("1abc.-+@_%"));
-        assertFalse(DepotUtil.isValidRealm("1abc.-&@_%"));
-        assertFalse(DepotUtil.isValidRealm("1abc.-/@_%"));
+    void validTenantOrRealm() {
+        assertTrue(DepotUtil.isValidTenantOrRealm("1abc.-+@_%"));
+        assertFalse(DepotUtil.isValidTenantOrRealm("1abc.-&@_%"));
+        assertFalse(DepotUtil.isValidTenantOrRealm("1abc.-/@_%"));
     }
 
     @Test
