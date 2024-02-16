@@ -47,7 +47,7 @@ public class ApiControllerTests {
 
     @Test
     public void Register_client_with_valid_request() {
-        var validRegisterRequest = new HttpEntity<>(new AccessTokenRequestDto("admin_secret", "re_al-m1", "Sub Ject 01.01.2099", "r", tomorrow));
+        var validRegisterRequest = new HttpEntity<>(new AccessTokenRequestDto("tenant_b", "tenant_b_secret", "re_al-m1", "Sub Ject 01.01.2099", "r", tomorrow));
         var validRegisterResponse = restTemplate.postForEntity(baseUrl + port + "/admin/register", validRegisterRequest, AccessTokenResponseDto.class);
         assertEquals(HttpStatus.OK, validRegisterResponse.getStatusCode());
         assertNotNull(validRegisterResponse.getBody());
@@ -56,18 +56,18 @@ public class ApiControllerTests {
 
     @Test
     public void Request_token() {
-        var validRegisterRequest = new HttpEntity<>(new AccessTokenRequestDto("admin_secret", "re_al-m1", "subject1", "r", LocalDate.of(2037, 11, 13)));
+        var validRegisterRequest = new HttpEntity<>(new AccessTokenRequestDto("tenant_a", "tenant_a_secret", "re_al-m1", "subject1", "r", LocalDate.of(2037, 11, 13)));
         var validRegisterResponse = restTemplate.postForEntity(baseUrl + port + "/admin/register", validRegisterRequest, AccessTokenResponseDto.class);
         assertEquals(HttpStatus.OK, validRegisterResponse.getStatusCode());
 
         assertNotNull(validRegisterResponse.getBody());
-        var referenceToken = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJkZXBvdCIsInJlYWxtIjoicmVfYWwtbTEiLCJtb2RlIjoiciIsInN1YiI6InN1YmplY3QxIiwiZXhwIjoyMTQxNjgzMjAwfQ.LihXwtt_sLu2HOSDnU0Tcf5hkfFtDsdgThdV-E3iiew";
+        var referenceToken = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJkZXBvdCIsInRlbmFudCI6InRlbmFudF9hIiwicmVhbG0iOiJyZV9hbC1tMSIsIm1vZGUiOiJyIiwic3ViIjoic3ViamVjdDEiLCJleHAiOjIxNDE2ODMyMDB9.PHL7p-vOX9ZbmkGZ8aBmnFVPDX00hCHGqt6U3G4Abm8";
         assertEquals(referenceToken, validRegisterResponse.getBody().token());
     }
 
     @Test
     public void Request_token_qr() throws IOException {
-        var validRegisterRequest = new HttpEntity<>(new AccessTokenRequestDto("admin_secret", "re_al-m2", "subject2", "w", LocalDate.of(2050, 12, 31)));
+        var validRegisterRequest = new HttpEntity<>(new AccessTokenRequestDto("tenant_a", "tenant_a_secret", "re_al-m2", "subject2", "w", LocalDate.of(2050, 12, 31)));
         var validRegisterResponse = restTemplate.postForEntity(baseUrl + port + "/admin/qr", validRegisterRequest, byte[].class);
         assertEquals(HttpStatus.OK, validRegisterResponse.getStatusCode());
 
@@ -79,36 +79,57 @@ public class ApiControllerTests {
     }
 
     @Test
+    public void Deny_client_with_invalid_password() {
+        var invalidRegisterRequest = new HttpEntity<>(new AccessTokenRequestDto("tenant_a", "wrong_secret", "realm", "subject", "r", tomorrow));
+        var invalidRegisterResponse = restTemplate.postForEntity(baseUrl + port + "/admin/register", invalidRegisterRequest, AccessTokenResponseDto.class);
+        assertEquals(HttpStatus.UNAUTHORIZED, invalidRegisterResponse.getStatusCode());
+    }
+
+    @Test
+    public void Deny_client_with_invalid_tenant() {
+        var invalidRegisterRequest = new HttpEntity<>(new AccessTokenRequestDto("tenant_c", "tenant_a_secret", "realm", "subject", "r", tomorrow));
+        var invalidRegisterResponse = restTemplate.postForEntity(baseUrl + port + "/admin/register", invalidRegisterRequest, AccessTokenResponseDto.class);
+        assertEquals(HttpStatus.UNAUTHORIZED, invalidRegisterResponse.getStatusCode());
+    }
+
+    @Test
+    public void Deny_client_with_invalid_tenant_name() {
+        var invalidRegisterRequest = new HttpEntity<>(new AccessTokenRequestDto("tenant a", "tenant_a_secret", "realm", "subject", "r", tomorrow));
+        var invalidRegisterResponse = restTemplate.postForEntity(baseUrl + port + "/admin/register", invalidRegisterRequest, AccessTokenResponseDto.class);
+        assertEquals(HttpStatus.BAD_REQUEST, invalidRegisterResponse.getStatusCode());
+    }
+
+    @Test
     public void Deny_client_with_invalid_realm_name() {
-        var invalidRegisterRequest = new HttpEntity<>(new AccessTokenRequestDto("admin_secret", "realm$_", "subject", "r", tomorrow));
+        var invalidRegisterRequest = new HttpEntity<>(new AccessTokenRequestDto("tenant_a", "tenant_a_secret", "realm$_", "subject", "r", tomorrow));
         var invalidRegisterResponse = restTemplate.postForEntity(baseUrl + port + "/admin/register", invalidRegisterRequest, AccessTokenResponseDto.class);
         assertEquals(HttpStatus.BAD_REQUEST, invalidRegisterResponse.getStatusCode());
     }
 
     @Test
     public void Deny_client_with_invalid_blank_in_realm_name() {
-        var invalidRegisterRequest = new HttpEntity<>(new AccessTokenRequestDto("admin_secret", "re alm", "subject", "r", tomorrow));
+        var invalidRegisterRequest = new HttpEntity<>(new AccessTokenRequestDto("tenant_a", "tenant_a_secret", "re alm", "subject", "r", tomorrow));
         var invalidRegisterResponse = restTemplate.postForEntity(baseUrl + port + "/admin/register", invalidRegisterRequest, AccessTokenResponseDto.class);
         assertEquals(HttpStatus.BAD_REQUEST, invalidRegisterResponse.getStatusCode());
     }
 
     @Test
     public void Deny_client_with_invalid_subject() {
-        var invalidRegisterRequest = new HttpEntity<>(new AccessTokenRequestDto("admin_secret", "realm", " ", "r", tomorrow));
+        var invalidRegisterRequest = new HttpEntity<>(new AccessTokenRequestDto("tenant_a", "tenant_a_secret", "realm", " ", "r", tomorrow));
         var invalidRegisterResponse = restTemplate.postForEntity(baseUrl + port + "/admin/register", invalidRegisterRequest, AccessTokenResponseDto.class);
         assertEquals(HttpStatus.BAD_REQUEST, invalidRegisterResponse.getStatusCode());
     }
 
     @Test
     public void Deny_client_with_invalid_admin_password() {
-        var invalidRegisterRequest = new HttpEntity<>(new AccessTokenRequestDto("wrong_password", "realm", "subject", "r", tomorrow));
+        var invalidRegisterRequest = new HttpEntity<>(new AccessTokenRequestDto("tenant_a", "wrong_password", "realm", "subject", "r", tomorrow));
         var invalidRegisterResponse = restTemplate.postForEntity(baseUrl + port + "/admin/register", invalidRegisterRequest, AccessTokenResponseDto.class);
         assertEquals(HttpStatus.UNAUTHORIZED, invalidRegisterResponse.getStatusCode());
     }
 
     @Test
     public void Deny_client_with_expiration_date_not_in_the_future() {
-        var todayRegisterRequest = new HttpEntity<>(new AccessTokenRequestDto("admin_secret", "realm", "subject", "r", today));
+        var todayRegisterRequest = new HttpEntity<>(new AccessTokenRequestDto("tenant_a", "tenant_a_secret", "realm", "subject", "r", today));
         var todayRegisterResponse = restTemplate.postForEntity(baseUrl + port + "/admin/register", todayRegisterRequest, AccessTokenResponseDto.class);
         assertEquals(HttpStatus.BAD_REQUEST, todayRegisterResponse.getStatusCode());
     }
@@ -116,7 +137,7 @@ public class ApiControllerTests {
     @Test
     @Disabled
     public void Deny_requests_from_client_with_expiration_date_of_today() {
-        var todayRegisterRequest = new HttpEntity<>(new AccessTokenRequestDto("admin_secret", "realm", "subject", "r", today));
+        var todayRegisterRequest = new HttpEntity<>(new AccessTokenRequestDto("tenant_a", "tenant_a_secret", "realm", "subject", "r", today));
         var todayRegisterResponse = restTemplate.postForEntity(baseUrl + port + "/admin/register", todayRegisterRequest, AccessTokenResponseDto.class);
         assertEquals(HttpStatus.OK, todayRegisterResponse.getStatusCode());
         assertNotNull(todayRegisterResponse.getBody());
@@ -130,9 +151,9 @@ public class ApiControllerTests {
 
     @Test
     public void Deny_file_with_invalid_name() throws IOException {
-        FileUtils.deleteDirectory(depotProperties.getBaseDirectory().resolve("realm").toFile());
+        FileUtils.deleteDirectory(depotProperties.getBaseDirectory().resolve("tenant_a").resolve("realm").toFile());
 
-        var registerRequest = new HttpEntity<>(new AccessTokenRequestDto("admin_secret", "realm", "subject", "rw", tomorrow));
+        var registerRequest = new HttpEntity<>(new AccessTokenRequestDto("tenant_a", "tenant_a_secret", "realm", "subject", "rw", tomorrow));
         var registerResponse = restTemplate.postForEntity(baseUrl + port + "/admin/register", registerRequest, AccessTokenResponseDto.class);
 
         assertNotNull(registerResponse.getBody());
@@ -160,9 +181,9 @@ public class ApiControllerTests {
 
     @Test
     void Deny_write_file_to_folder_with_same_name() throws IOException {
-        FileUtils.deleteDirectory(depotProperties.getBaseDirectory().resolve("realm").toFile());
+        FileUtils.deleteDirectory(depotProperties.getBaseDirectory().resolve("tenant_a").resolve("realm").toFile());
 
-        var registerRequest = new HttpEntity<>(new AccessTokenRequestDto("admin_secret", "realm", "subject", "rw", tomorrow));
+        var registerRequest = new HttpEntity<>(new AccessTokenRequestDto("tenant_a", "tenant_a_secret", "realm", "subject", "rw", tomorrow));
         var registerResponse = restTemplate.postForEntity(baseUrl + port + "/admin/register", registerRequest, AccessTokenResponseDto.class);
 
         assertNotNull(registerResponse.getBody());
@@ -204,9 +225,9 @@ public class ApiControllerTests {
 
     @Test
     void Deny_write_folder_to_file_with_same_name() throws IOException {
-        FileUtils.deleteDirectory(depotProperties.getBaseDirectory().resolve("realm").toFile());
+        FileUtils.deleteDirectory(depotProperties.getBaseDirectory().resolve("tenant_a").resolve("realm").toFile());
 
-        var registerRequest = new HttpEntity<>(new AccessTokenRequestDto("admin_secret", "realm", "subject", "rw", tomorrow));
+        var registerRequest = new HttpEntity<>(new AccessTokenRequestDto("tenant_a", "tenant_a_secret", "realm", "subject", "rw", tomorrow));
         var registerResponse = restTemplate.postForEntity(baseUrl + port + "/admin/register", registerRequest, AccessTokenResponseDto.class);
 
         assertNotNull(registerResponse.getBody());
@@ -248,9 +269,9 @@ public class ApiControllerTests {
 
     @Test
     public void Put_file() throws IOException {
-        FileUtils.deleteDirectory(depotProperties.getBaseDirectory().resolve("realm").toFile());
+        FileUtils.deleteDirectory(depotProperties.getBaseDirectory().resolve("tenant_a").resolve("realm").toFile());
 
-        var registerRequest = new HttpEntity<>(new AccessTokenRequestDto("admin_secret", "realm", "subject", "rw", tomorrow));
+        var registerRequest = new HttpEntity<>(new AccessTokenRequestDto("tenant_a", "tenant_a_secret", "realm", "subject", "rw", tomorrow));
         var registerResponse = restTemplate.postForEntity(baseUrl + port + "/admin/register", registerRequest, AccessTokenResponseDto.class);
 
         assertNotNull(registerResponse.getBody());
@@ -296,7 +317,7 @@ public class ApiControllerTests {
         assertTrue(now.minusSeconds(1).isBefore(modified));
         assertEquals(fileSize, fileEntry.size());
 
-        var logRequest = new HttpEntity<>(new LogRequestDto("admin_secret"));
+        var logRequest = new HttpEntity<>(new LogRequestDto("tenant_a", "tenant_a_secret"));
         var logResponse = restTemplate.postForEntity(baseUrl + port + "/admin/log", logRequest, String[].class);
         var logBody = logResponse.getBody();
         assertNotNull(logBody);
@@ -306,7 +327,7 @@ public class ApiControllerTests {
 
     @Test
     public void Deny_read_only_put() throws IOException {
-        var registerRequest = new HttpEntity<>(new AccessTokenRequestDto("admin_secret", "realm", "subject", "r", tomorrow));
+        var registerRequest = new HttpEntity<>(new AccessTokenRequestDto("tenant_a", "tenant_a_secret", "realm", "subject", "r", tomorrow));
         var registerResponse = restTemplate.postForEntity(baseUrl + port + "/admin/register", registerRequest, AccessTokenResponseDto.class);
 
         assertNotNull(registerResponse.getBody());
@@ -328,7 +349,7 @@ public class ApiControllerTests {
 
     @Test
     public void Get_file() throws IOException {
-        var registerRequest = new HttpEntity<>(new AccessTokenRequestDto("admin_secret", "realm", "subject", "rw", tomorrow));
+        var registerRequest = new HttpEntity<>(new AccessTokenRequestDto("tenant_b", "tenant_b_secret", "realm", "subject", "rw", tomorrow));
         var registerResponse = restTemplate.postForEntity(baseUrl + port + "/admin/register", registerRequest, AccessTokenResponseDto.class);
 
         assertNotNull(registerResponse.getBody());
@@ -363,7 +384,7 @@ public class ApiControllerTests {
 
     @Test
     public void Get_range_file() throws IOException {
-        var registerRequest = new HttpEntity<>(new AccessTokenRequestDto("admin_secret", "realm", "subject", "rw", tomorrow));
+        var registerRequest = new HttpEntity<>(new AccessTokenRequestDto("tenant_a", "tenant_a_secret", "realm", "subject", "rw", tomorrow));
         var registerResponse = restTemplate.postForEntity(baseUrl + port + "/admin/register", registerRequest, AccessTokenResponseDto.class);
 
         assertNotNull(registerResponse.getBody());
@@ -414,7 +435,7 @@ public class ApiControllerTests {
 
     @Test
     public void Deny_write_only_get() {
-        var registerRequest = new HttpEntity<>(new AccessTokenRequestDto("admin_secret", "realm", "subject", "w", tomorrow));
+        var registerRequest = new HttpEntity<>(new AccessTokenRequestDto("tenant_a", "tenant_a_secret", "realm", "subject", "w", tomorrow));
         var registerResponse = restTemplate.postForEntity(baseUrl + port + "/admin/register", registerRequest, AccessTokenResponseDto.class);
 
         assertNotNull(registerResponse.getBody());
@@ -430,8 +451,10 @@ public class ApiControllerTests {
     }
 
     @Test
-    public void Deny_write_only_list() {
-        var registerRequest = new HttpEntity<>(new AccessTokenRequestDto("admin_secret", "realm", "subject", "w", tomorrow));
+    public void Allow_list_for_blank_tenant() throws IOException {
+        FileUtils.deleteDirectory(depotProperties.getBaseDirectory().resolve("tenant_b").resolve("realm").toFile());
+
+        var registerRequest = new HttpEntity<>(new AccessTokenRequestDto("tenant_b", "tenant_b_secret", "realm", "subject", "r", tomorrow));
         var registerResponse = restTemplate.postForEntity(baseUrl + port + "/admin/register", registerRequest, AccessTokenResponseDto.class);
 
         assertNotNull(registerResponse.getBody());
@@ -441,14 +464,33 @@ public class ApiControllerTests {
 
         var getUrl = baseUrl + port + "/list?path=/";
 
-        var response = restTemplate.exchange(getUrl, HttpMethod.GET, requestEntity, String.class);
+        var response = restTemplate.exchange(getUrl, HttpMethod.GET, requestEntity, FileDto[].class);
+
+        assertEquals(HttpStatus.OK, response.getStatusCode());
+        assertNotNull(response.getBody());
+        assertEquals(0, response.getBody().length);
+    }
+
+    @Test
+    public void Deny_write_only_list() {
+        var registerRequest = new HttpEntity<>(new AccessTokenRequestDto("tenant_a", "tenant_a_secret", "realm", "subject", "w", tomorrow));
+        var registerResponse = restTemplate.postForEntity(baseUrl + port + "/admin/register", registerRequest, AccessTokenResponseDto.class);
+
+        assertNotNull(registerResponse.getBody());
+        var headers = getHeaders(registerResponse.getBody().token());
+
+        var requestEntity = new HttpEntity<Void>(headers);
+
+        var getUrl = baseUrl + port + "/list?path=/";
+
+        var response = restTemplate.exchange(getUrl, HttpMethod.GET, requestEntity, Void.class);
 
         assertEquals(HttpStatus.UNAUTHORIZED, response.getStatusCode());
     }
 
     @Test
     public void Deny_write_only_delete() {
-        var registerRequest = new HttpEntity<>(new AccessTokenRequestDto("admin_secret", "realm", "subject", "wr", tomorrow));
+        var registerRequest = new HttpEntity<>(new AccessTokenRequestDto("tenant_a", "tenant_a_secret", "realm", "subject", "wr", tomorrow));
         var registerResponse = restTemplate.postForEntity(baseUrl + port + "/admin/register", registerRequest, AccessTokenResponseDto.class);
 
         assertNotNull(registerResponse.getBody());
@@ -465,9 +507,9 @@ public class ApiControllerTests {
 
     @Test
     public void Delete() throws IOException {
-        FileUtils.deleteDirectory(depotProperties.getBaseDirectory().resolve("realm").toFile());
+        FileUtils.deleteDirectory(depotProperties.getBaseDirectory().resolve("tenant_a").resolve("realm").toFile());
 
-        var registerRequest = new HttpEntity<>(new AccessTokenRequestDto("admin_secret", "realm", "subject", "rdw", tomorrow));
+        var registerRequest = new HttpEntity<>(new AccessTokenRequestDto("tenant_a", "tenant_a_secret", "realm", "subject", "rdw", tomorrow));
         var registerResponse = restTemplate.postForEntity(baseUrl + port + "/admin/register", registerRequest, AccessTokenResponseDto.class);
 
         assertNotNull(registerResponse.getBody());

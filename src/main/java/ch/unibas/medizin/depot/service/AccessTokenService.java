@@ -73,22 +73,24 @@ public record AccessTokenService(
     }
 
     private String getToken(AccessTokenRequestDto accessTokenRequestDto) {
-        authorizationService.throwIfAdminPasswordMismatches(accessTokenRequestDto.password());
+        authorizationService.throwIfAdminPasswordMismatches(accessTokenRequestDto.tenant(), accessTokenRequestDto.password());
 
-        log.info("Token requested with realm={} subject={} mode={} expirationDate={}",
+        log.info("Token requested with tenant={} realm={} subject={} mode={} expirationDate={}",
+                accessTokenRequestDto.tenant(),
                 accessTokenRequestDto.realm(),
                 accessTokenRequestDto.subject(),
                 accessTokenRequestDto.mode(),
                 accessTokenRequestDto.expirationDate());
 
-        final var logString = String.format("%s %s %s", accessTokenRequestDto.realm(), accessTokenRequestDto.mode(), accessTokenRequestDto.expirationDate());
-        logService.log(LogService.EventType.TOKEN, accessTokenRequestDto.subject(), logString);
+        final var logString = String.format("%s %s %s %s", accessTokenRequestDto.tenant(), accessTokenRequestDto.realm(), accessTokenRequestDto.mode(), accessTokenRequestDto.expirationDate());
+        logService.log(accessTokenRequestDto.tenant(), LogService.EventType.TOKEN, accessTokenRequestDto.subject(), logString);
 
         final var zoneId = StringUtils.hasText(depotProperties.getTimeZone()) ? ZoneId.of(depotProperties.getTimeZone()) : ZoneId.systemDefault();
         final var expirationDate = accessTokenRequestDto.expirationDate().atStartOfDay().atZone(zoneId).toInstant();
 
         return JWT.create()
                 .withIssuer("depot")
+                .withClaim("tenant", accessTokenRequestDto.tenant())
                 .withClaim("realm", accessTokenRequestDto.realm())
                 .withClaim("mode", accessTokenRequestDto.mode().toLowerCase())
                 .withSubject(accessTokenRequestDto.subject())

@@ -5,11 +5,11 @@ import jakarta.validation.Payload;
 import java.lang.annotation.*;
 
 @Documented
-@Constraint(validatedBy = RealmValidator.class)
+@Constraint(validatedBy = PathValidator.class)
 @Target( { ElementType.METHOD, ElementType.FIELD })
 @Retention(RetentionPolicy.RUNTIME)
-public @interface RealmConstraint {
-    String message() default "must only contain chars and numbers";
+public @interface PathConstraint {
+    String message() default "must only contain characters and numbers";
     Class<?>[] groups() default {};
     Class<? extends Payload>[] payload() default {};
 }

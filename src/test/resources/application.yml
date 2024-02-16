@@ -1,0 +1,27 @@
+depot:
+  base-directory: /tmp/depot
+  host: https://depot.example.com
+  time-zone: UTC
+  jwt-secret: the_secret_key_length_must_be_a_minimum_of_256_bits
+  tenants:
+    tenant_a:
+      password: $2a$12$F0i2tRPlOfcfMzBErX.08eF.jDw36bdO6Ry8DlTym6auAeJ4/Tli.
+    tenant_b:
+      password: $2a$12$qffmRhyAkQs7DLa1kwDdW.DNb2Q2gUK1wUueoS3ZTY7rY4hwdFuPy
+
+
+spring:
+  threads:
+    virtual:
+      enabled: true
+  mvc:
+    problemdetails:
+      enabled:
+        true
+  servlet:
+    multipart:
+      max-request-size: 500MB
+      max-file-size: 500MB
+
+server:
+  forward-headers-strategy: framework

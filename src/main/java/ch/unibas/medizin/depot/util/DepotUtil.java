@@ -41,7 +41,7 @@ public interface DepotUtil {
         return isValidFilename(candidateFilename);
     }
 
-    static boolean isValidRealm(final String candidate) {
+    static boolean isValidTenantOrRealm(final String candidate) {
         return isValid(candidate, false);
     }
 

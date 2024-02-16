@@ -24,71 +24,71 @@ public class AccessTokenRequestValidationTest {
 
     @Test
     void validateUser() {
-        var accessTokenRequestDto = new AccessTokenRequestDto("pw", "56aBc1é3", "user", "r", LocalDate.now().plusDays(1));
+        var accessTokenRequestDto = new AccessTokenRequestDto("tenant", "pw", "56aBc1é3", "user", "r", LocalDate.now().plusDays(1));
         var violations = validator.validate(accessTokenRequestDto);
         assertTrue(violations.isEmpty());
 
-        accessTokenRequestDto = new AccessTokenRequestDto("pw", "56aBc1é3", "user", "rw", LocalDate.now());
+        accessTokenRequestDto = new AccessTokenRequestDto("tenant", "pw", "56aBc1é3", "user", "rw", LocalDate.now());
         violations = validator.validate(accessTokenRequestDto);
         assertFalse(violations.isEmpty());
 
-        accessTokenRequestDto = new AccessTokenRequestDto("pw", "56aBc13", "user", "rwD", LocalDate.now().plusDays(1));
+        accessTokenRequestDto = new AccessTokenRequestDto("tenant", "pw", "56aBc13", "user", "rwD", LocalDate.now().plusDays(1));
         violations = validator.validate(accessTokenRequestDto);
         assertTrue(violations.isEmpty());
 
-        accessTokenRequestDto = new AccessTokenRequestDto("pw", "56aBc1é3", "user", "wr", LocalDate.now().minusDays(1));
+        accessTokenRequestDto = new AccessTokenRequestDto("tenant", "pw", "56aBc1é3", "user", "wr", LocalDate.now().minusDays(1));
         violations = validator.validate(accessTokenRequestDto);
         assertFalse(violations.isEmpty());
 
-        accessTokenRequestDto = new AccessTokenRequestDto("pw", "56aBc1é3", " ", "rw", LocalDate.now().plusDays(1));
+        accessTokenRequestDto = new AccessTokenRequestDto("tenant", "pw", "56aBc1é3", " ", "rw", LocalDate.now().plusDays(1));
         violations = validator.validate(accessTokenRequestDto);
         assertFalse(violations.isEmpty());
 
-        accessTokenRequestDto = new AccessTokenRequestDto("pw", "56aBc1é3", "", "rw", LocalDate.now().plusDays(1));
+        accessTokenRequestDto = new AccessTokenRequestDto("tenant", "pw", "56aBc1é3", "", "rw", LocalDate.now().plusDays(1));
         violations = validator.validate(accessTokenRequestDto);
         assertFalse(violations.isEmpty());
 
-        accessTokenRequestDto = new AccessTokenRequestDto("pw", "56aBc1é3", "user", null, LocalDate.now().plusDays(1));
+        accessTokenRequestDto = new AccessTokenRequestDto("tenant", "pw", "56aBc1é3", "user", null, LocalDate.now().plusDays(1));
         violations = validator.validate(accessTokenRequestDto);
         assertFalse(violations.isEmpty());
 
-        accessTokenRequestDto = new AccessTokenRequestDto("pw", "56aBc1é3", "user", "", LocalDate.now().plusDays(1));
+        accessTokenRequestDto = new AccessTokenRequestDto("tenant", "pw", "56aBc1é3", "user", "", LocalDate.now().plusDays(1));
         violations = validator.validate(accessTokenRequestDto);
         assertFalse(violations.isEmpty());
 
-        accessTokenRequestDto = new AccessTokenRequestDto("pw", "56aBc1é3", "user", "fw", LocalDate.now().plusDays(1));
+        accessTokenRequestDto = new AccessTokenRequestDto("tenant", "pw", "56aBc1é3", "user", "fw", LocalDate.now().plusDays(1));
         violations = validator.validate(accessTokenRequestDto);
         assertFalse(violations.isEmpty());
 
-        accessTokenRequestDto = new AccessTokenRequestDto("pw", "56aBc1é3", "password", "rw", null);
+        accessTokenRequestDto = new AccessTokenRequestDto("tenant", "pw", "56aBc1é3", "password", "rw", null);
         violations = validator.validate(accessTokenRequestDto);
         assertFalse(violations.isEmpty());
 
-        accessTokenRequestDto = new AccessTokenRequestDto("pw", "a%b", "password", "w", LocalDate.now().plusDays(1));
+        accessTokenRequestDto = new AccessTokenRequestDto("tenant", "pw", "a%b", "password", "w", LocalDate.now().plusDays(1));
         violations = validator.validate(accessTokenRequestDto);
         assertTrue(violations.isEmpty());
 
-        accessTokenRequestDto = new AccessTokenRequestDto("pw", "a\"b", "password", "rw", LocalDate.now().plusDays(1));
+        accessTokenRequestDto = new AccessTokenRequestDto("tenant", "pw", "a\"b", "password", "rw", LocalDate.now().plusDays(1));
         violations = validator.validate(accessTokenRequestDto);
         assertFalse(violations.isEmpty());
 
-        accessTokenRequestDto = new AccessTokenRequestDto("pw", "realm$_", "password", "rw", LocalDate.now().plusDays(1));
+        accessTokenRequestDto = new AccessTokenRequestDto("tenant", "pw", "realm$_", "password", "rw", LocalDate.now().plusDays(1));
         violations = validator.validate(accessTokenRequestDto);
         assertFalse(violations.isEmpty());
 
-        accessTokenRequestDto = new AccessTokenRequestDto("pw", " ", "password", "rw", LocalDate.now().plusDays(1));
+        accessTokenRequestDto = new AccessTokenRequestDto("tenant", "pw", " ", "password", "rw", LocalDate.now().plusDays(1));
         violations = validator.validate(accessTokenRequestDto);
         assertFalse(violations.isEmpty());
 
-        accessTokenRequestDto = new AccessTokenRequestDto("pw", "", "password", "rw", LocalDate.now().plusDays(1));
+        accessTokenRequestDto = new AccessTokenRequestDto("tenant", "pw", "", "password", "rw", LocalDate.now().plusDays(1));
         violations = validator.validate(accessTokenRequestDto);
         assertFalse(violations.isEmpty());
 
-        accessTokenRequestDto = new AccessTokenRequestDto(" ", "56aBc1é3", "password", "rw", LocalDate.now().plusDays(1));
+        accessTokenRequestDto = new AccessTokenRequestDto("tenant", " ", "56aBc1é3", "password", "rw", LocalDate.now().plusDays(1));
         violations = validator.validate(accessTokenRequestDto);
         assertFalse(violations.isEmpty());
 
-        accessTokenRequestDto = new AccessTokenRequestDto("pw", "56@a-B_c1.é3", "password", "rw", LocalDate.now().plusDays(1));
+        accessTokenRequestDto = new AccessTokenRequestDto("tenant", "pw", "56@a-B_c1.é3", "password", "rw", LocalDate.now().plusDays(1));
         violations = validator.validate(accessTokenRequestDto);
         assertTrue(violations.isEmpty());
     }

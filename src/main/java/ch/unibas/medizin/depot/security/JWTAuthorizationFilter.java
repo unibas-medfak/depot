@@ -49,8 +49,14 @@ public class JWTAuthorizationFilter extends OncePerRequestFilter {
     }
 
     private void setUpSpringAuthentication(final DecodedJWT decodedJWT) {
-        final var realmAndSubject = String.format("%s%s%s", decodedJWT.getClaim("realm").asString(),
-                String.valueOf(Character.LINE_SEPARATOR), decodedJWT.getSubject());
+        final var tenantRealmAndSubject = String.format(
+                "%s%s%s%s%s",
+                decodedJWT.getClaim("tenant").asString(),
+                String.valueOf(Character.LINE_SEPARATOR),
+                decodedJWT.getClaim("realm").asString(),
+                String.valueOf(Character.LINE_SEPARATOR),
+                decodedJWT.getSubject()
+        );
 
         final var grantedAuthorities = new ArrayList<GrantedAuthority>();
         if (decodedJWT.getClaim("mode").asString().contains("r")) {
@@ -63,7 +69,7 @@ public class JWTAuthorizationFilter extends OncePerRequestFilter {
             grantedAuthorities.add(new SimpleGrantedAuthority("ROLE_DELETE"));
         }
 
-        final var authenticationToken = new UsernamePasswordAuthenticationToken(realmAndSubject, null, grantedAuthorities);
+        final var authenticationToken = new UsernamePasswordAuthenticationToken(tenantRealmAndSubject, null, grantedAuthorities);
         SecurityContextHolder.getContext().setAuthentication(authenticationToken);
     }
 
