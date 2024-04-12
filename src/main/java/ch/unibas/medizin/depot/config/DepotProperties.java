@@ -7,15 +7,14 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.FatalBeanException;
 import org.springframework.boot.context.properties.ConfigurationProperties;
+import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.util.StringUtils;
 import org.springframework.validation.annotation.Validated;
 
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.Base64;
-import java.util.Map;
-import java.util.Random;
+import java.util.*;
 
 @Validated
 @ConfigurationProperties(prefix = "depot")
@@ -38,7 +37,6 @@ public class DepotProperties {
     @NotEmpty
     private final Map<String, Tenant> tenants;
 
-    @SuppressWarnings("unused")
     public record Tenant(@NotEmpty String password) {
     }
 
@@ -53,7 +51,7 @@ public class DepotProperties {
         this.host = host;
         this.timeZone = timeZone;
         this.jwtSecret = getJwtSecret(this.baseDirectory, jwtSecret);
-        this.tenants = tenants;
+        this.tenants = getTenants(tenants);
     }
 
     public String getHost() {
@@ -81,7 +79,7 @@ public class DepotProperties {
             return jwtSecretFromProperties;
         }
 
-        log.info("No JWT secret found in application.properties");
+        log.info("No JWT secret found in application.yml");
 
         var jwtSecretFileName = ".jwtsecret";
         var jwtSecretFilePath = baseDirectory.resolve(jwtSecretFileName);
@@ -104,6 +102,40 @@ public class DepotProperties {
                 return randomJwtSecretString;
             } catch (IOException ex) {
                 log.error("Error while writing {}", jwtSecretFileName, ex);
+                throw new FatalBeanException("Failed to configure DepotProperties!");
+            }
+        }
+    }
+
+    private Map<String, Tenant> getTenants(Map<String, Tenant> tenantsFromProperties) {
+        if (tenantsFromProperties != null) {
+            return tenantsFromProperties;
+        }
+
+        log.info("No tenants found in application.yml");
+
+        var defaultTenantPasswordFilename = ".default";
+        var defaultTenantPasswordPath = baseDirectory.resolve(defaultTenantPasswordFilename);
+
+        try {
+            var encodedDefaultTenantPassword = Files.readString(defaultTenantPasswordPath);
+            log.info("Default tenant password read from {}", defaultTenantPasswordPath);
+            return Map.of("default", new Tenant(encodedDefaultTenantPassword));
+        } catch (IOException e) {
+            log.info("No default tenant password found in {}", defaultTenantPasswordPath);
+
+            var randomPassword = UUID.randomUUID().toString();
+            log.error("!!!!!!!!!!!!!!!! DEFAULT TENANT PASSWORD = {} !!!!!!!!!!!!!!!!", randomPassword);
+
+            var passwordEncoder = new BCryptPasswordEncoder();
+            var encodedDefaultTenantPassword = passwordEncoder.encode(randomPassword);
+
+            try {
+                Files.createDirectories(baseDirectory);
+                Files.writeString(baseDirectory.resolve(defaultTenantPasswordFilename), encodedDefaultTenantPassword);
+                return Map.of("default", new Tenant(encodedDefaultTenantPassword));
+            } catch (IOException ex) {
+                log.error("Error while writing {}", defaultTenantPasswordFilename, ex);
                 throw new FatalBeanException("Failed to configure DepotProperties!");
             }
         }
