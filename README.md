@@ -11,6 +11,8 @@ http://localhost:8080/swagger-ui/index.html
 
 ## run with docker
 
+Edit run.sh
+
 ```console
 $ ./build.sh
 $ ./run.sh

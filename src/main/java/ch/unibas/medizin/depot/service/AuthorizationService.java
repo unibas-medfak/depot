@@ -7,6 +7,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
+import org.springframework.util.StringUtils;
 
 @Service
 public record AuthorizationService(
@@ -22,6 +23,11 @@ public record AuthorizationService(
 
         if (tenant == null) {
             log.error("Request with invalid tenant");
+            throw new AccessDeniedException("Invalid credentials");
+        }
+
+        if (!StringUtils.hasText(tenant.password())) {
+            log.error("Tenant password is empty");
             throw new AccessDeniedException("Invalid credentials");
         }
 

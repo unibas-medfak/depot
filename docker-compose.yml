@@ -4,6 +4,8 @@ services:
     image: depot:latest
     volumes:
       - ./depot:/var/local/depot/
+    environment:
+      - DEFAULT_TENANT_PASSWORD=$DEFAULT_TENANT_PASSWORD
   nginx:
     image: nginx:latest
     volumes:

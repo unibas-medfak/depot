@@ -2,6 +2,9 @@ depot:
   base-directory: /var/local/depot
   host: http://localhost:8080
   time-zone: UTC
+  tenants:
+    default:
+      password: ${DEFAULT_TENANT_PASSWORD:}
 
 spring:
   threads:

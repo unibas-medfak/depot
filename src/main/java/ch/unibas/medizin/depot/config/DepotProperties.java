@@ -37,7 +37,7 @@ public class DepotProperties {
     @NotEmpty
     private final Map<String, Tenant> tenants;
 
-    public record Tenant(@NotEmpty String password) {
+    public record Tenant(String password) {
     }
 
     public DepotProperties(Path baseDirectory, String host, String timeZone, String jwtSecret, Map<String, Tenant> tenants) {
@@ -108,8 +108,12 @@ public class DepotProperties {
     }
 
     private Map<String, Tenant> getTenants(Map<String, Tenant> tenantsFromProperties) {
-        if (tenantsFromProperties != null) {
-            return tenantsFromProperties;
+        if (tenantsFromProperties != null && !tenantsFromProperties.isEmpty()) {
+            var allTenantsHavePasswords = tenantsFromProperties.values().stream().allMatch(tenant -> StringUtils.hasText(tenant.password()));
+
+            if (allTenantsHavePasswords) {
+                return tenantsFromProperties;
+            }
         }
 
         log.info("No tenants found in application.yml");

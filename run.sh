@@ -7,5 +7,6 @@ openssl req -x509 -nodes -newkey rsa:2048 -keyout ssl/key.pem -out ssl/cert.pem 
 
 docker build . -t depot
 
-docker-compose up
+export DEFAULT_TENANT_PASSWORD='$2a$12$mrIQGr1j4x04PJLPdf5qc.kon9I51BOsBzWistEzW/WZmYQiAbyBG'
 
+docker-compose up
