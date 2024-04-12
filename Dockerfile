@@ -11,5 +11,6 @@ WORKDIR /opt/app
 EXPOSE 8080
 COPY --from=builder /opt/app/target/*.jar /opt/app/*.jar
 ENTRYPOINT ["java", "-jar", "/opt/app/*.jar" ]
-LABEL org.opencontainers.image.source = "https://github.com/unibas-medfak/depot"
+LABEL org.opencontainers.image.source="https://github.com/unibas-medfak/depot"
+LABEL org.opencontainers.image.description="Simple and secure file storage service"
 
