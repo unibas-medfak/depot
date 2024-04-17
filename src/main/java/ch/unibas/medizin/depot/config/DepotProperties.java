@@ -22,6 +22,8 @@ public class DepotProperties {
 
     private static final Logger log = LoggerFactory.getLogger(DepotProperties.class);
 
+    public static String DEFAULT_TENANT_NAME = "default";
+
     @NotNull
     private final Path baseDirectory;
 
@@ -109,10 +111,34 @@ public class DepotProperties {
 
     private Map<String, Tenant> getTenants(Map<String, Tenant> tenantsFromProperties) {
         if (tenantsFromProperties != null && !tenantsFromProperties.isEmpty()) {
-            var allTenantsHavePasswords = tenantsFromProperties.values().stream().allMatch(tenant -> StringUtils.hasText(tenant.password()));
+
+            var allTenantsHavePasswords = true;
+            var removeDefaultTenant = false;
+
+            for (var tenantFromProperties : tenantsFromProperties.entrySet()) {
+                if (StringUtils.hasText(tenantFromProperties.getValue().password())) {
+                    log.info("Found tenant {} in application.yml", tenantFromProperties.getKey());
+                }
+                else {
+                    if (tenantFromProperties.getKey().equals(DEFAULT_TENANT_NAME)) {
+                        removeDefaultTenant = true;
+                    }
+                    else {
+                        log.info("Tenant {} is missing password in application.yml", tenantFromProperties.getKey());
+                        allTenantsHavePasswords = false;
+                    }
+                }
+
+            }
 
             if (allTenantsHavePasswords) {
-                return tenantsFromProperties;
+                if (removeDefaultTenant) {
+                    tenantsFromProperties.remove(DEFAULT_TENANT_NAME);
+                }
+
+                if (!tenantsFromProperties.isEmpty()) {
+                    return tenantsFromProperties;
+                }
             }
         }
 
@@ -124,7 +150,7 @@ public class DepotProperties {
         try {
             var encodedDefaultTenantPassword = Files.readString(defaultTenantPasswordPath);
             log.info("Default tenant password read from {}", defaultTenantPasswordPath);
-            return Map.of("default", new Tenant(encodedDefaultTenantPassword));
+            return Map.of(DEFAULT_TENANT_NAME, new Tenant(encodedDefaultTenantPassword));
         } catch (IOException e) {
             log.info("No default tenant password found in {}", defaultTenantPasswordPath);
 
@@ -137,7 +163,7 @@ public class DepotProperties {
             try {
                 Files.createDirectories(baseDirectory);
                 Files.writeString(baseDirectory.resolve(defaultTenantPasswordFilename), encodedDefaultTenantPassword);
-                return Map.of("default", new Tenant(encodedDefaultTenantPassword));
+                return Map.of(DEFAULT_TENANT_NAME, new Tenant(encodedDefaultTenantPassword));
             } catch (IOException ex) {
                 log.error("Error while writing {}", defaultTenantPasswordFilename, ex);
                 throw new FatalBeanException("Failed to configure DepotProperties!");
