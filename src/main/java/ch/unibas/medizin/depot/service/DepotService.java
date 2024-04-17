@@ -87,10 +87,16 @@ public record DepotService(
         final var normalizedFile = DepotUtil.normalizePath(file);
         final var tokenData = getTokenData();
         final var fullPath = tokenData.basePath().resolve(normalizedFile);
-        final var resource = new FileSystemResource(fullPath);
 
         logService.log(tokenData.tenant, LogService.EventType.GET, tokenData.subject(), fullPath.toString());
         log.info("{} get {}", tokenData.subject(), fullPath);
+
+        if (Files.isDirectory(fullPath)) {
+            log.info("{} is a directory", fullPath);
+            throw new FileNotFoundException(file);
+        }
+
+        final var resource = new FileSystemResource(fullPath);
 
         if (resource.exists() || resource.isReadable()) {
             return resource;
