@@ -22,7 +22,7 @@ public class DepotProperties {
 
     private static final Logger log = LoggerFactory.getLogger(DepotProperties.class);
 
-    public static String DEFAULT_TENANT_NAME = "default";
+    public static final String DEFAULT_TENANT_NAME = "default";
 
     @NotNull
     private final Path baseDirectory;
