@@ -9,13 +9,13 @@
 	</parent>
 	<groupId>ch.unibas.medizin</groupId>
 	<artifactId>depot</artifactId>
-	<version>1.0.1-SNAPSHOT</version>
+	<version>1.0.1</version>
 	<name>depot</name>
 	<description>Simple and secure file storage service</description>
 
 	<scm>
 		<developerConnection>scm:git:git@github.com:unibas-medfak/depot.git</developerConnection>
-		<tag>depot-0.0.5</tag>
+		<tag>depot-1.0.1</tag>
 	</scm>
 
 	<properties>
