@@ -143,6 +143,7 @@ public record DepotService(
 
             return new PutFileResponseDto(bytes, hash ? DigestUtils.sha256Hex(file.getInputStream()) : "-");
         } catch (Exception e) {
+            log.error("Could not store the file", e);
             throw new RuntimeException("Could not store the file. " + e.getMessage());
         }
     }
