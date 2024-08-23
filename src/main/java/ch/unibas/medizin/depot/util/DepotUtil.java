@@ -22,9 +22,9 @@ public interface DepotUtil {
 
         return Paths.get(
                 normalizedPath
-                .replaceAll("/+", "/")
-                .replaceAll("^/", "")
-                .replaceAll("/$", "")
+                        .replaceAll("/+", "/")
+                        .replaceAll("^/", "")
+                        .replaceAll("/$", "")
         );
     }
 
@@ -66,7 +66,7 @@ public interface DepotUtil {
                     && candidateChar != '%'
                     && candidateChar != '+'
                     && (!allowSlash || candidateChar != '/')) {
-                        return false;
+                return false;
             }
         }
 

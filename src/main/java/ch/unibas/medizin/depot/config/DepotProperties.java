@@ -14,7 +14,10 @@ import org.springframework.validation.annotation.Validated;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.*;
+import java.util.Base64;
+import java.util.Map;
+import java.util.Random;
+import java.util.UUID;
 
 @Validated
 @ConfigurationProperties(prefix = "depot")
@@ -45,8 +48,7 @@ public class DepotProperties {
     public DepotProperties(Path baseDirectory, String host, String timeZone, String jwtSecret, Map<String, Tenant> tenants) {
         if ("Mac OS X".equals(SystemUtils.OS_NAME)) {
             this.baseDirectory = Path.of("/tmp/depot");
-        }
-        else {
+        } else {
             this.baseDirectory = baseDirectory;
         }
 
@@ -118,12 +120,10 @@ public class DepotProperties {
             for (var tenantFromProperties : tenantsFromProperties.entrySet()) {
                 if (StringUtils.hasText(tenantFromProperties.getValue().password())) {
                     log.info("Found tenant {} in application.yml", tenantFromProperties.getKey());
-                }
-                else {
+                } else {
                     if (tenantFromProperties.getKey().equals(DEFAULT_TENANT_NAME)) {
                         removeDefaultTenant = true;
-                    }
-                    else {
+                    } else {
                         log.info("Tenant {} is missing password in application.yml", tenantFromProperties.getKey());
                         allTenantsHavePasswords = false;
                     }

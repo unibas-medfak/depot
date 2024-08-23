@@ -17,7 +17,7 @@ public class AccessTokenRequestValidationTest {
 
     @BeforeEach
     public void setUp() {
-        try(var factory = Validation.buildDefaultValidatorFactory()) {
+        try (var factory = Validation.buildDefaultValidatorFactory()) {
             validator = factory.getValidator();
         }
     }

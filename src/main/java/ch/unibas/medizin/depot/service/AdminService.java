@@ -27,7 +27,7 @@ public record AdminService(
 
         log.info("Log requested");
 
-        final var lastLogLines  = new ArrayList<String>();
+        final var lastLogLines = new ArrayList<String>();
 
         final var maxNumberOfLinesToRead = 100;
         final var logfile = depotProperties.getBaseDirectory().resolve(logRequestDto.tenant()).resolve(DepotUtil.LOGFILE_NAME).toString();

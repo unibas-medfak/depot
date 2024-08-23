@@ -136,7 +136,7 @@ public record DepotService(
 
         try {
             final var tmpFile = Files.createTempFile(depotProperties.getBaseDirectory().resolve("tmp"), "depot", "");
-            CopyOption[] options = { StandardCopyOption.REPLACE_EXISTING };
+            CopyOption[] options = {StandardCopyOption.REPLACE_EXISTING};
 
             final var bytes = Files.copy(file.getInputStream(), tmpFile, options);
 
@@ -156,8 +156,7 @@ public record DepotService(
 
         try {
             FileSystemUtils.deleteRecursively(fullPath);
-        }
-        catch (IOException e) {
+        } catch (IOException e) {
             log.error("Could not delete file or folder", e);
             throw new RuntimeException("Could not delete file or folder.");
         }

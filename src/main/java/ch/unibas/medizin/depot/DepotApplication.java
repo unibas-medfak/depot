@@ -14,14 +14,14 @@ import org.springframework.boot.context.properties.EnableConfigurationProperties
 import java.util.Locale;
 
 @EnableConfigurationProperties(DepotProperties.class)
-@SpringBootApplication(exclude = { UserDetailsServiceAutoConfiguration.class })
+@SpringBootApplication(exclude = {UserDetailsServiceAutoConfiguration.class})
 @OpenAPIDefinition(info = @Info(title = "Depot API", version = "1.0", description = "Secure file storage API"))
 @SecurityScheme(name = "depotapi", scheme = "bearer", type = SecuritySchemeType.HTTP, in = SecuritySchemeIn.HEADER)
 public class DepotApplication {
 
-	public static void main(String[] args) {
-		Locale.setDefault(Locale.ENGLISH);
-		SpringApplication.run(DepotApplication.class, args);
-	}
+    public static void main(String[] args) {
+        Locale.setDefault(Locale.ENGLISH);
+        SpringApplication.run(DepotApplication.class, args);
+    }
 
 }
