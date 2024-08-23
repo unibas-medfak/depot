@@ -7,6 +7,7 @@ import ch.unibas.medizin.depot.exception.FileAlreadyExistsAsFolderException;
 import ch.unibas.medizin.depot.exception.FileNotFoundException;
 import ch.unibas.medizin.depot.exception.FolderAlreadyExistsAsFileException;
 import ch.unibas.medizin.depot.exception.PathNotFoundException;
+import ch.unibas.medizin.depot.security.JWTAuthorizationFilter;
 import ch.unibas.medizin.depot.util.DepotUtil;
 import jakarta.annotation.PostConstruct;
 import org.apache.commons.codec.digest.DigestUtils;
@@ -170,7 +171,8 @@ public record DepotService(
 
     private TokenData getTokenData() {
         final var authentication = SecurityContextHolder.getContext().getAuthentication();
-        final var tenantRealmAndSubject = Arrays.asList(authentication.getName().split(String.valueOf(Character.LINE_SEPARATOR)));
+        final var tenantRealmAndSubject = Arrays.asList(authentication.getName().split(JWTAuthorizationFilter.TOKEN_DATA_DELIMITER));
+        assert tenantRealmAndSubject.size() == 3;
 
         final var tenant = tenantRealmAndSubject.get(0);
         assert StringUtils.hasText(tenant);

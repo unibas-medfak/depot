@@ -17,7 +17,10 @@ import org.springframework.util.LinkedMultiValueMap;
 import org.springframework.util.MultiValueMap;
 import org.springframework.util.StreamUtils;
 
-import java.io.*;
+import java.io.BufferedOutputStream;
+import java.io.File;
+import java.io.FileOutputStream;
+import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.StandardOpenOption;
 import java.time.Instant;
@@ -121,6 +124,34 @@ public class ApiControllerTests {
     }
 
     @Test
+    public void Deny_client_with_blank_realm() {
+        var invalidRegisterRequest = new HttpEntity<>(new AccessTokenRequestDto("tenant_a", "tenant_a_secret", "", "subject", "r", tomorrow));
+        var invalidRegisterResponse = restTemplate.postForEntity(baseUrl + port + "/admin/register", invalidRegisterRequest, AccessTokenResponseDto.class);
+        assertEquals(HttpStatus.BAD_REQUEST, invalidRegisterResponse.getStatusCode());
+    }
+
+    @Test
+    public void Deny_client_with_blank_subject() {
+        var invalidRegisterRequest = new HttpEntity<>(new AccessTokenRequestDto("tenant_a", "tenant_a_secret", "realm", "", "r", tomorrow));
+        var invalidRegisterResponse = restTemplate.postForEntity(baseUrl + port + "/admin/register", invalidRegisterRequest, AccessTokenResponseDto.class);
+        assertEquals(HttpStatus.BAD_REQUEST, invalidRegisterResponse.getStatusCode());
+    }
+
+    @Test
+    public void Deny_client_with_linebreak_in_realm() {
+        var invalidRegisterRequest = new HttpEntity<>(new AccessTokenRequestDto("tenant_a", "tenant_a_secret", "re\nlm", "subject", "r", tomorrow));
+        var invalidRegisterResponse = restTemplate.postForEntity(baseUrl + port + "/admin/register", invalidRegisterRequest, AccessTokenResponseDto.class);
+        assertEquals(HttpStatus.BAD_REQUEST, invalidRegisterResponse.getStatusCode());
+    }
+
+    @Test
+    public void Deny_client_with_linebreak_in_subject() {
+        var invalidRegisterRequest = new HttpEntity<>(new AccessTokenRequestDto("tenant_a", "tenant_a_secret", "realm", "sub\nject", "r", tomorrow));
+        var invalidRegisterResponse = restTemplate.postForEntity(baseUrl + port + "/admin/register", invalidRegisterRequest, AccessTokenResponseDto.class);
+        assertEquals(HttpStatus.BAD_REQUEST, invalidRegisterResponse.getStatusCode());
+    }
+
+    @Test
     public void Deny_client_with_invalid_admin_password() {
         var invalidRegisterRequest = new HttpEntity<>(new AccessTokenRequestDto("tenant_a", "wrong_password", "realm", "subject", "r", tomorrow));
         var invalidRegisterResponse = restTemplate.postForEntity(baseUrl + port + "/admin/register", invalidRegisterRequest, AccessTokenResponseDto.class);
@@ -161,7 +192,7 @@ public class ApiControllerTests {
         headers.setContentType(MediaType.MULTIPART_FORM_DATA);
 
         var body = new LinkedMultiValueMap<String, Object>();
-        var bytes = new byte[] { 1 };
+        var bytes = new byte[]{1};
 
         var byteArrayResource = new ByteArrayResource(bytes) {
             @Override
@@ -190,7 +221,7 @@ public class ApiControllerTests {
         var headers = getHeaders(registerResponse.getBody().token());
         headers.setContentType(MediaType.MULTIPART_FORM_DATA);
 
-        var bytes = new byte[] { 1 };
+        var bytes = new byte[]{1};
 
         var folderBody = new LinkedMultiValueMap<String, Object>();
         var folderByteArrayResource = new ByteArrayResource(bytes) {
@@ -234,7 +265,7 @@ public class ApiControllerTests {
         var headers = getHeaders(registerResponse.getBody().token());
         headers.setContentType(MediaType.MULTIPART_FORM_DATA);
 
-        var bytes = new byte[] { 1 };
+        var bytes = new byte[]{1};
 
         var fileBody = new LinkedMultiValueMap<String, Object>();
         var fileByteArrayResource = new ByteArrayResource(bytes) {

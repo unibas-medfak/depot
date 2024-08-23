@@ -73,4 +73,18 @@ public interface DepotUtil {
         return true;
     }
 
+    static boolean isValidSubject(String candidate) {
+        int length = candidate.length();
+
+        for (int i = 0; i < length; i++) {
+            var candidateChar = candidate.charAt(i);
+
+            if (Character.isISOControl(candidateChar)) {
+                return false;
+            }
+        }
+
+        return true;
+    }
+
 }

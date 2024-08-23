@@ -23,6 +23,8 @@ import java.util.ArrayList;
 @Component
 public class JWTAuthorizationFilter extends OncePerRequestFilter {
 
+    public static final String TOKEN_DATA_DELIMITER = String.valueOf(Character.LINE_SEPARATOR);
+
     private final String HEADER = "Authorization";
 
     private final String PREFIX = "Bearer ";
@@ -52,9 +54,9 @@ public class JWTAuthorizationFilter extends OncePerRequestFilter {
         final var tenantRealmAndSubject = String.format(
                 "%s%s%s%s%s",
                 decodedJWT.getClaim("tenant").asString(),
-                String.valueOf(Character.LINE_SEPARATOR),
+                JWTAuthorizationFilter.TOKEN_DATA_DELIMITER,
                 decodedJWT.getClaim("realm").asString(),
-                String.valueOf(Character.LINE_SEPARATOR),
+                JWTAuthorizationFilter.TOKEN_DATA_DELIMITER,
                 decodedJWT.getSubject()
         );
 
