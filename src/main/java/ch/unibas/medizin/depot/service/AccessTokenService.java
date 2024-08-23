@@ -75,7 +75,7 @@ public record AccessTokenService(
     private String getToken(AccessTokenRequestDto accessTokenRequestDto) {
         authorizationService.throwIfAdminPasswordMismatches(accessTokenRequestDto.tenant(), accessTokenRequestDto.password());
 
-        log.info("Token requested with tenant={} realm={} subject={} mode={} expirationDate={}",
+        log.debug("Token requested with tenant={} realm={} subject={} mode={} expirationDate={}",
                 accessTokenRequestDto.tenant(),
                 accessTokenRequestDto.realm(),
                 accessTokenRequestDto.subject(),

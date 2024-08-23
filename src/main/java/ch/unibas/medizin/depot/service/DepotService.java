@@ -52,7 +52,7 @@ public record DepotService(
         final var fullPath = tokenData.basePath().resolve(normalizedPath);
 
         logService.log(tokenData.tenant, LogService.EventType.LIST, tokenData.subject(), fullPath.toString());
-        log.info("{} list {}", tokenData.subject(), fullPath);
+        log.debug("{} list {}", tokenData.subject(), fullPath);
 
         final var entries = new LinkedList<FileDto>();
 
@@ -89,7 +89,7 @@ public record DepotService(
         final var fullPath = tokenData.basePath().resolve(normalizedFile);
 
         logService.log(tokenData.tenant, LogService.EventType.GET, tokenData.subject(), fullPath.toString());
-        log.info("{} get {}", tokenData.subject(), fullPath);
+        log.debug("{} get {}", tokenData.subject(), fullPath);
 
         if (Files.isDirectory(fullPath)) {
             log.info("{} is a directory", fullPath);
@@ -112,7 +112,7 @@ public record DepotService(
         final var fullPathAndFile = fullPath.resolve(Objects.requireNonNull(file.getOriginalFilename()));
 
         logService.log(tokenData.tenant, LogService.EventType.PUT, tokenData.subject(), fullPathAndFile.toString());
-        log.info("{} put {}", tokenData.subject(), fullPathAndFile);
+        log.debug("{} put {}", tokenData.subject(), fullPathAndFile);
 
         if (Files.isRegularFile(fullPath)) {
             log.error("Folder {} already exists as file", fullPath);
@@ -162,7 +162,7 @@ public record DepotService(
         }
 
         logService.log(tokenData.tenant, LogService.EventType.DELETE, tokenData.subject(), fullPath.toString());
-        log.info("{} delete {}", tokenData.subject(), fullPath);
+        log.debug("{} delete {}", tokenData.subject(), fullPath);
     }
 
     private record TokenData(String tenant, Path basePath, String subject) {
