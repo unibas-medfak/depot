@@ -7,7 +7,7 @@ import ch.unibas.medizin.depot.exception.FileAlreadyExistsAsFolderException;
 import ch.unibas.medizin.depot.exception.FileNotFoundException;
 import ch.unibas.medizin.depot.exception.FolderAlreadyExistsAsFileException;
 import ch.unibas.medizin.depot.exception.PathNotFoundException;
-import ch.unibas.medizin.depot.security.JWTAuthorizationFilter;
+import ch.unibas.medizin.depot.security.TokenData;
 import ch.unibas.medizin.depot.util.DepotUtil;
 import jakarta.annotation.PostConstruct;
 import org.apache.commons.codec.digest.DigestUtils;
@@ -15,16 +15,13 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.core.io.FileSystemResource;
 import org.springframework.core.io.Resource;
-import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import org.springframework.util.FileSystemUtils;
-import org.springframework.util.StringUtils;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.io.IOException;
 import java.nio.file.*;
 import java.nio.file.attribute.BasicFileAttributes;
-import java.util.Arrays;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Objects;
@@ -47,12 +44,11 @@ public record DepotService(
         }
     }
 
-    public List<FileDto> list(final String path) {
-        final var tokenData = getTokenData();
+    public List<FileDto> list(final String path, final TokenData tokenData) {
         final var normalizedPath = DepotUtil.normalizePath(path);
         final var fullPath = tokenData.basePath().resolve(normalizedPath);
 
-        logService.log(tokenData.tenant, LogService.EventType.LIST, tokenData.subject(), fullPath.toString());
+        logService.log(tokenData.tenant(), LogService.EventType.LIST, tokenData.subject(), fullPath.toString());
         log.info("{} list {}", tokenData.subject(), fullPath);
 
         final var entries = new LinkedList<FileDto>();
@@ -84,12 +80,11 @@ public record DepotService(
         return entries;
     }
 
-    public Resource get(final String file) {
+    public Resource get(final String file, final TokenData tokenData) {
         final var normalizedFile = DepotUtil.normalizePath(file);
-        final var tokenData = getTokenData();
         final var fullPath = tokenData.basePath().resolve(normalizedFile);
 
-        logService.log(tokenData.tenant, LogService.EventType.GET, tokenData.subject(), fullPath.toString());
+        logService.log(tokenData.tenant(), LogService.EventType.GET, tokenData.subject(), fullPath.toString());
         log.info("{} get {}", tokenData.subject(), fullPath);
 
         if (Files.isDirectory(fullPath)) {
@@ -106,13 +101,12 @@ public record DepotService(
         }
     }
 
-    public PutFileResponseDto put(final MultipartFile file, final String path, final boolean hash) {
-        final var tokenData = getTokenData();
+    public PutFileResponseDto put(final MultipartFile file, final String path, final boolean hash, final TokenData tokenData) {
         final var normalizedPath = DepotUtil.normalizePath(path);
         final var fullPath = tokenData.basePath().resolve(normalizedPath);
         final var fullPathAndFile = fullPath.resolve(Objects.requireNonNull(file.getOriginalFilename()));
 
-        logService.log(tokenData.tenant, LogService.EventType.PUT, tokenData.subject(), fullPathAndFile.toString());
+        logService.log(tokenData.tenant(), LogService.EventType.PUT, tokenData.subject(), fullPathAndFile.toString());
         log.info("{} put {}", tokenData.subject(), fullPathAndFile);
 
         if (Files.isRegularFile(fullPath)) {
@@ -149,9 +143,8 @@ public record DepotService(
         }
     }
 
-    public void delete(final String path) {
+    public void delete(final String path, final TokenData tokenData) {
         final var normalizedFile = DepotUtil.normalizePath(path);
-        final var tokenData = getTokenData();
         final var fullPath = tokenData.basePath().resolve(normalizedFile);
 
         try {
@@ -161,29 +154,8 @@ public record DepotService(
             throw new RuntimeException("Could not delete file or folder.");
         }
 
-        logService.log(tokenData.tenant, LogService.EventType.DELETE, tokenData.subject(), fullPath.toString());
+        logService.log(tokenData.tenant(), LogService.EventType.DELETE, tokenData.subject(), fullPath.toString());
         log.info("{} delete {}", tokenData.subject(), fullPath);
-    }
-
-    private record TokenData(String tenant, Path basePath, String subject) {
-    }
-
-    private TokenData getTokenData() {
-        final var authentication = SecurityContextHolder.getContext().getAuthentication();
-        final var tenantRealmAndSubject = Arrays.asList(authentication.getName().split(JWTAuthorizationFilter.TOKEN_DATA_DELIMITER));
-        assert tenantRealmAndSubject.size() == 3;
-
-        final var tenant = tenantRealmAndSubject.get(0);
-        assert StringUtils.hasText(tenant);
-
-        final var realm = tenantRealmAndSubject.get(1);
-        assert StringUtils.hasText(realm);
-
-        final var subject = tenantRealmAndSubject.get(2);
-        assert StringUtils.hasText(subject);
-
-        final var rootAndRealmPath = depotProperties.getBaseDirectory().resolve(tenant).resolve(realm);
-        return new TokenData(tenant, rootAndRealmPath, subject);
     }
 
 }

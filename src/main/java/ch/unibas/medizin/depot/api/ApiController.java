@@ -3,6 +3,7 @@ package ch.unibas.medizin.depot.api;
 import ch.unibas.medizin.depot.dto.FileDto;
 import ch.unibas.medizin.depot.dto.PutFileResponseDto;
 import ch.unibas.medizin.depot.exception.InvalidRequestException;
+import ch.unibas.medizin.depot.service.AuthorizationService;
 import ch.unibas.medizin.depot.service.DepotService;
 import ch.unibas.medizin.depot.util.DepotUtil;
 import io.swagger.v3.oas.annotations.Operation;
@@ -31,9 +32,12 @@ public class ApiController {
 
     private static final String INVALID_REQUEST_DETAIL = "must only contain letters, digits and the following chars . _ - @ % + /";
 
+    private final AuthorizationService authorizationService;
+
     private final DepotService depotService;
 
-    public ApiController(DepotService depotService) {
+    public ApiController(AuthorizationService authorizationService, DepotService depotService) {
+        this.authorizationService = authorizationService;
         this.depotService = depotService;
     }
 
@@ -46,7 +50,8 @@ public class ApiController {
             throw new InvalidRequestException("path", path, INVALID_REQUEST_DETAIL);
         }
 
-        return ResponseEntity.ok(depotService.list(path));
+        var tokenData = authorizationService.getTokenData();
+        return ResponseEntity.ok(depotService.list(path, tokenData));
     }
 
     @GetMapping("/get")
@@ -58,7 +63,8 @@ public class ApiController {
             throw new InvalidRequestException("file", file, INVALID_REQUEST_DETAIL);
         }
 
-        return depotService.get(file);
+        var tokenData = authorizationService.getTokenData();
+        return depotService.get(file, tokenData);
     }
 
     @PostMapping(value = "/put", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
@@ -78,7 +84,8 @@ public class ApiController {
             throw new InvalidRequestException("filename", file.getOriginalFilename(), INVALID_REQUEST_DETAIL);
         }
 
-        return ResponseEntity.ok(depotService.put(file, path, hash));
+        var tokenData = authorizationService.getTokenData();
+        return ResponseEntity.ok(depotService.put(file, path, hash, tokenData));
     }
 
     @GetMapping("/delete")
@@ -90,7 +97,8 @@ public class ApiController {
             throw new InvalidRequestException("path", path, INVALID_REQUEST_DETAIL);
         }
 
-        depotService.delete(path);
+        var tokenData = authorizationService.getTokenData();
+        depotService.delete(path, tokenData);
         return new ResponseEntity<>(HttpStatus.OK);
     }
 

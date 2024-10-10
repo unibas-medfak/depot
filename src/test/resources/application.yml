@@ -25,3 +25,7 @@ spring:
 
 server:
   forward-headers-strategy: framework
+
+gg:
+  jte:
+    development-mode: true

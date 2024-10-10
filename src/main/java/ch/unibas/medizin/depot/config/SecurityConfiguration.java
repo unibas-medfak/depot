@@ -31,11 +31,11 @@ public class SecurityConfiguration {
                 .csrf(AbstractHttpConfigurer::disable)
                 .addFilterAfter(jwtAuthorizationFilter, UsernamePasswordAuthenticationFilter.class)
                 .authorizeHttpRequests(authorizeHttpRequests ->
-                        authorizeHttpRequests
-                                .requestMatchers(HttpMethod.GET, "/").permitAll()
-                                .requestMatchers(HttpMethod.POST, "/admin/register", "/admin/qr", "/admin/log").permitAll()
-                                .requestMatchers("/v3/api-docs/**", "/swagger-ui/**").permitAll()
-                                .anyRequest().authenticated()
+                        authorizeHttpRequests.anyRequest().permitAll()
+                                //.requestMatchers(HttpMethod.GET, "/", "info").permitAll()
+                                //.requestMatchers(HttpMethod.POST, "/admin/register", "/admin/qr", "/admin/log").permitAll()
+                                //.requestMatchers("/v3/api-docs/**", "/swagger-ui/**").permitAll()
+                                //.anyRequest().authenticated()
                 )
                 .sessionManagement(sessionManagement ->
                         sessionManagement.sessionCreationPolicy(SessionCreationPolicy.STATELESS)
