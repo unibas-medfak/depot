@@ -54,6 +54,10 @@ public interface DepotUtil {
     }
 
     private static boolean isValid(final String candidate, final boolean allowSlash) {
+        if (null == candidate) {
+            return false;
+        }
+
         final int length = candidate.length();
 
         for (int i = 0; i < length; i++) {
@@ -74,6 +78,10 @@ public interface DepotUtil {
     }
 
     static boolean isValidSubject(String candidate) {
+        if (null == candidate) {
+            return false;
+        }
+
         int length = candidate.length();
 
         for (int i = 0; i < length; i++) {
