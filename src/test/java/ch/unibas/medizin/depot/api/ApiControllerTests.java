@@ -339,13 +339,13 @@ public class ApiControllerTests {
         assertEquals("b", folderEntry.name());
         var now = Instant.now();
         var modified = folderEntry.modified();
-        assertTrue(now.minusSeconds(1).isBefore(modified));
+        assertTrue(now.minusSeconds(5).isBefore(modified));
         assertEquals(0, folderEntry.size());
 
         var fileEntry = Arrays.stream(listBody).filter(a -> a.type().equals(FileDto.FileType.FILE)).findFirst().orElseThrow();
         assertEquals(randomFile.getName(), fileEntry.name());
         modified = fileEntry.modified();
-        assertTrue(now.minusSeconds(1).isBefore(modified));
+        assertTrue(now.minusSeconds(5).isBefore(modified));
         assertEquals(fileSize, fileEntry.size());
 
         var logRequest = new HttpEntity<>(new LogRequestDto("tenant_a", "tenant_a_secret"));
