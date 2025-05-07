@@ -21,7 +21,7 @@
                 @if(file.type().equals(FileDto.FileType.FOLDER))
                     <li><a href="" hx-get="/cd?path=${path}/${file.name()}" hx-target="#filelist">${file.name()}</a></li>
                 @else
-                    <li><a href="/fetch?file=${path}/${file.name()}" target="_blank">${file.name()}</a></li>
+                    <li><a href="/fetch?file=${path}/${file.name()}" download="${file.name()}">${file.name()}</a></li>
                 @endif
             @endfor
         </ul>
