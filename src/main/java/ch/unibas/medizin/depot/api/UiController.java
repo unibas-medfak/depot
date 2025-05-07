@@ -9,7 +9,7 @@ import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.util.FileCopyUtils;
 import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 
 import java.io.IOException;
 import java.io.InputStreamReader;
@@ -50,11 +50,11 @@ public class UiController {
     }
 
     @HxRequest
-    @PostMapping("/ls")
-    public String list(Model model) {
+    @GetMapping("/cd")
+    public String list(@RequestParam final String path, Model model) {
         var tokenData = authorizationService.getTokenData("default", "realm", "subject");
-        var files = depotService.list("/b2", tokenData);
-        model.addAttribute("directory", "/b2");
+        var files = depotService.list(path, tokenData);
+        model.addAttribute("directory", path);
         model.addAttribute("files", files);
         return "list";
     }

@@ -13,7 +13,7 @@
         <ul>
             @for(FileDto file : files)
                 @if(file.type().equals(FileDto.FileType.FOLDER))
-                    <li><a href="" hx-post="/ls" hx-target="#filelist">${file.name()}</a></li>
+                    <li><a href="" hx-get="/cd?path=${directory}/${file.name()}" hx-target="#filelist">${file.name()}</a></li>
                 @else
                     <li>${file.name()}</li>
                 @endif

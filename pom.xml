@@ -4,7 +4,7 @@
 	<parent>
 		<groupId>org.springframework.boot</groupId>
 		<artifactId>spring-boot-starter-parent</artifactId>
-		<version>3.4.0-M3</version>
+		<version>3.4.0-RC1</version>
 		<relativePath />
 	</parent>
 	<groupId>ch.unibas.medizin</groupId>
@@ -21,7 +21,7 @@
 	<properties>
 		<java.version>21</java.version>
 		<json-path.version>2.9.0</json-path.version>
-		<jte.version>3.1.13</jte.version>
+		<jte.version>3.2.1</jte.version>
 	</properties>
 
 	<dependencies>
@@ -86,6 +86,11 @@
 		<dependency>
 			<groupId>org.springframework.boot</groupId>
 			<artifactId>spring-boot-starter-test</artifactId>
+			<scope>test</scope>
+		</dependency>
+		<dependency>
+			<groupId>io.projectreactor</groupId>
+			<artifactId>reactor-test</artifactId>
 			<scope>test</scope>
 		</dependency>
 		<dependency>
