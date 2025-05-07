@@ -1,9 +1,10 @@
 @import ch.unibas.medizin.depot.dto.FileDto
 @import java.util.List
 
-@param String directory
+@param String path
+@param String parent
 @param List<FileDto> files
 
 @template.layout.main(content = @`
-    @template.list(directory = directory, files = files)
+    @template.list(path = path, parent = parent, files = files)
 `)

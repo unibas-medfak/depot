@@ -4,12 +4,16 @@ import ch.unibas.medizin.depot.config.VersionHolder;
 import ch.unibas.medizin.depot.service.AuthorizationService;
 import ch.unibas.medizin.depot.service.DepotService;
 import io.github.wimdeblauwe.htmx.spring.boot.mvc.HxRequest;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.core.io.ClassPathResource;
+import org.springframework.core.io.Resource;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.util.FileCopyUtils;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.ResponseBody;
 
 import java.io.IOException;
 import java.io.InputStreamReader;
@@ -18,6 +22,8 @@ import java.nio.charset.StandardCharsets;
 
 @Controller
 public class UiController {
+
+    private static final Logger log = LoggerFactory.getLogger(UiController.class);
 
     private final AuthorizationService authorizationService;
 
@@ -44,8 +50,9 @@ public class UiController {
         var tokenData = authorizationService.getTokenData("default", "realm", "subject");
         var files = depotService.list("/", tokenData);
 
-        model.addAttribute("directory", "/");
+        model.addAttribute("path", "");
         model.addAttribute("files", files);
+
         return "pages/index";
     }
 
@@ -54,9 +61,24 @@ public class UiController {
     public String list(@RequestParam final String path, Model model) {
         var tokenData = authorizationService.getTokenData("default", "realm", "subject");
         var files = depotService.list(path, tokenData);
-        model.addAttribute("directory", path);
+        var parent = "";
+        var lastSlashIndex = path.lastIndexOf('/');
+        if (lastSlashIndex > 0) {
+            parent = path.substring(0, lastSlashIndex);
+        }
+
+        model.addAttribute("path", path);
+        model.addAttribute("parent", parent);
         model.addAttribute("files", files);
+
         return "list";
+    }
+
+    @ResponseBody
+    @GetMapping("/fetch")
+    public Resource fetch(@RequestParam final String file) {
+        var tokenData = authorizationService.getTokenData("default", "realm", "subject");
+        return depotService.get(file, tokenData);
     }
 
     @GetMapping( "/info")
