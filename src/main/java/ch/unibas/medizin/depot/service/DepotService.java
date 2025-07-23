@@ -24,10 +24,7 @@ import org.springframework.web.multipart.MultipartFile;
 import java.io.IOException;
 import java.nio.file.*;
 import java.nio.file.attribute.BasicFileAttributes;
-import java.util.Arrays;
-import java.util.LinkedList;
-import java.util.List;
-import java.util.Objects;
+import java.util.*;
 
 @Service
 public record DepotService(
@@ -55,7 +52,7 @@ public record DepotService(
         logService.log(tokenData.tenant, LogService.EventType.LIST, tokenData.subject(), fullPath.toString());
         log.info("{} list {}", tokenData.subject(), fullPath);
 
-        final var entries = new LinkedList<FileDto>();
+        final var entries = new ArrayList<FileDto>();
 
         try (final var fileList = Files.list(fullPath)) {
             fileList.forEach(entry -> {

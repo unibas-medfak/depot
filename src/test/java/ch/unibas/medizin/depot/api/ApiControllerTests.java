@@ -25,6 +25,7 @@ import java.nio.file.Files;
 import java.nio.file.StandardOpenOption;
 import java.time.Instant;
 import java.time.LocalDate;
+import java.time.ZoneId;
 import java.util.Arrays;
 import java.util.Objects;
 import java.util.Random;
@@ -36,9 +37,9 @@ public class ApiControllerTests {
 
     private final String baseUrl = "http://localhost:";
 
-    private final LocalDate today = LocalDate.now();
+    private final LocalDate today = LocalDate.now(ZoneId.systemDefault());
 
-    private final LocalDate tomorrow = LocalDate.now().plusDays(1);
+    private final LocalDate tomorrow = LocalDate.now(ZoneId.systemDefault()).plusDays(1);
 
     @LocalServerPort
     private int port;

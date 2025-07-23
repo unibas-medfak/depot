@@ -19,6 +19,7 @@ import java.awt.image.BufferedImage;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.time.ZoneId;
+import java.util.Locale;
 
 @Service
 public record AccessTokenService(
@@ -92,7 +93,7 @@ public record AccessTokenService(
                 .withIssuer("depot")
                 .withClaim("tenant", accessTokenRequestDto.tenant())
                 .withClaim("realm", accessTokenRequestDto.realm())
-                .withClaim("mode", accessTokenRequestDto.mode().toLowerCase())
+                .withClaim("mode", accessTokenRequestDto.mode().toLowerCase(Locale.getDefault()))
                 .withSubject(accessTokenRequestDto.subject())
                 .withExpiresAt(expirationDate)
                 .sign(Algorithm.HMAC256(depotProperties.getJwtSecret()));
