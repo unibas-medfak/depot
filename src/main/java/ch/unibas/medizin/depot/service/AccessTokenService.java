@@ -9,6 +9,7 @@ import com.auth0.jwt.algorithms.Algorithm;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.nayuki.qrcodegen.QrCode;
+import org.jspecify.annotations.NullMarked;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
@@ -22,6 +23,7 @@ import java.time.ZoneId;
 import java.util.Locale;
 
 @Service
+@NullMarked
 public record AccessTokenService(
         DepotProperties depotProperties,
         AuthorizationService authorizationService,

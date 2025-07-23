@@ -3,12 +3,14 @@ package ch.unibas.medizin.depot.validation;
 import ch.unibas.medizin.depot.util.DepotUtil;
 import jakarta.validation.ConstraintValidator;
 import jakarta.validation.ConstraintValidatorContext;
+import org.jspecify.annotations.Nullable;
+import org.springframework.util.StringUtils;
 
 public record SubjectValidator() implements ConstraintValidator<SubjectConstraint, String> {
 
     @Override
-    public boolean isValid(String realm, ConstraintValidatorContext constraintValidatorContext) {
-        return DepotUtil.isValidSubject(realm);
+    public boolean isValid(@Nullable String realm, ConstraintValidatorContext constraintValidatorContext) {
+        return StringUtils.hasText(realm) && DepotUtil.isValidSubject(realm);
     }
 
 }

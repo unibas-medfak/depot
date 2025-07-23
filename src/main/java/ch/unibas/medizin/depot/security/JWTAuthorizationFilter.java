@@ -9,6 +9,7 @@ import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+import org.jspecify.annotations.NullMarked;
 import org.springframework.lang.NonNull;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.GrantedAuthority;
@@ -21,6 +22,7 @@ import java.io.IOException;
 import java.util.ArrayList;
 
 @Component
+@NullMarked
 public class JWTAuthorizationFilter extends OncePerRequestFilter {
 
     public static final String TOKEN_DATA_DELIMITER = String.valueOf(Character.LINE_SEPARATOR);

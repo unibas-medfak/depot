@@ -4,6 +4,7 @@ import ch.unibas.medizin.depot.config.DepotProperties;
 import ch.unibas.medizin.depot.dto.LogRequestDto;
 import ch.unibas.medizin.depot.util.DepotUtil;
 import org.apache.commons.io.input.ReversedLinesFileReader;
+import org.jspecify.annotations.NullMarked;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
@@ -15,6 +16,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 @Service
+@NullMarked
 public record AdminService(
         DepotProperties depotProperties,
         AuthorizationService authorizationService

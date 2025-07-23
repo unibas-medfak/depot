@@ -8,6 +8,7 @@ import ch.qos.logback.classic.spi.ILoggingEvent;
 import ch.qos.logback.core.FileAppender;
 import ch.unibas.medizin.depot.config.DepotProperties;
 import ch.unibas.medizin.depot.util.DepotUtil;
+import org.jspecify.annotations.NullMarked;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 
@@ -15,6 +16,7 @@ import java.util.HashMap;
 import java.util.Map;
 
 @Service
+@NullMarked
 public class LogService {
 
     public enum EventType {
@@ -24,7 +26,6 @@ public class LogService {
     private final Map<String, Logger> loggers = new HashMap<>();
 
     public LogService(DepotProperties depotProperties) {
-
         for (var tenant : depotProperties.getTenants().keySet()) {
             var loggerContext = (LoggerContext) LoggerFactory.getILoggerFactory();
             var patternLayoutEncoder = new PatternLayoutEncoder();
@@ -52,7 +53,10 @@ public class LogService {
     }
 
     public void log(final String tenant, final EventType type, final String subject, final String description) {
-        loggers.get(tenant).info("{} {} {}", type, subject, description);
+        var logger = loggers.get(tenant);
+        if (logger != null) {
+            logger.info("{} {} {}", type, subject, description);
+        }
     }
 
 }

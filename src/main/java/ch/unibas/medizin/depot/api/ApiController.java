@@ -73,6 +73,11 @@ public class ApiController {
             throw new InvalidRequestException("path", path, INVALID_REQUEST_DETAIL);
         }
 
+        if (null == file.getOriginalFilename()) {
+            log.error("Invalid request - put filename null");
+            throw new InvalidRequestException("filename", "null", INVALID_REQUEST_DETAIL);
+        }
+
         if (!DepotUtil.isValidFilename(file.getOriginalFilename())) {
             log.error("Invalid request - put filename {}", file.getOriginalFilename());
             throw new InvalidRequestException("filename", file.getOriginalFilename(), INVALID_REQUEST_DETAIL);

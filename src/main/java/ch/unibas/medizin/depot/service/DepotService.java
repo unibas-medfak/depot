@@ -11,6 +11,7 @@ import ch.unibas.medizin.depot.security.JWTAuthorizationFilter;
 import ch.unibas.medizin.depot.util.DepotUtil;
 import jakarta.annotation.PostConstruct;
 import org.apache.commons.codec.digest.DigestUtils;
+import org.jspecify.annotations.NullMarked;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.core.io.FileSystemResource;
@@ -27,6 +28,7 @@ import java.nio.file.attribute.BasicFileAttributes;
 import java.util.*;
 
 @Service
+@NullMarked
 public record DepotService(
         DepotProperties depotProperties,
         LogService logService

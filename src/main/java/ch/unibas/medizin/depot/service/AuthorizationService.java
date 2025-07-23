@@ -2,6 +2,7 @@ package ch.unibas.medizin.depot.service;
 
 import ch.unibas.medizin.depot.config.DepotProperties;
 import jakarta.annotation.Nonnull;
+import org.jspecify.annotations.NullMarked;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.security.access.AccessDeniedException;
@@ -10,6 +11,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
 
 @Service
+@NullMarked
 public record AuthorizationService(
         PasswordEncoder passwordEncoder,
         DepotProperties depotProperties
