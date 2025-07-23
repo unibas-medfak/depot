@@ -8,6 +8,7 @@ import ch.unibas.medizin.depot.service.AccessTokenService;
 import ch.unibas.medizin.depot.service.AdminService;
 import io.swagger.v3.oas.annotations.Operation;
 import jakarta.validation.Validator;
+import org.jspecify.annotations.NullMarked;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -17,6 +18,7 @@ import org.springframework.web.bind.annotation.RestController;
 
 import java.util.List;
 
+@NullMarked
 @RestController
 @RequestMapping("/admin")
 public class AdminController {

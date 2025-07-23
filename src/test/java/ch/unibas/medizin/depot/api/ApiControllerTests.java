@@ -4,6 +4,7 @@ import ch.unibas.medizin.depot.config.DepotProperties;
 import ch.unibas.medizin.depot.dto.*;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.IOUtils;
+import org.jspecify.annotations.NullMarked;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -32,6 +33,7 @@ import java.util.Random;
 
 import static org.junit.jupiter.api.Assertions.*;
 
+@NullMarked
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
 public class ApiControllerTests {
 

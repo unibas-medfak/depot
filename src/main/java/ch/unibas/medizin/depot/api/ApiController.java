@@ -8,6 +8,7 @@ import ch.unibas.medizin.depot.util.DepotUtil;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
+import org.jspecify.annotations.NullMarked;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.core.io.Resource;
@@ -23,6 +24,7 @@ import org.springframework.web.multipart.MultipartFile;
 
 import java.util.List;
 
+@NullMarked
 @RestController
 @SecurityRequirement(name = "depotapi")
 public class ApiController {
