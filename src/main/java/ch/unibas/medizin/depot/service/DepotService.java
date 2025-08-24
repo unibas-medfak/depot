@@ -87,7 +87,14 @@ public record DepotService(
     public Resource get(final String file) {
         final var normalizedFile = DepotUtil.normalizePath(file);
         final var tokenData = getTokenData();
-        final var fullPath = tokenData.basePath().resolve(normalizedFile);
+        final var fullPath = tokenData.basePath().resolve(normalizedFile).normalize().toAbsolutePath();
+        final var basePath = tokenData.basePath().normalize().toAbsolutePath();
+
+        // Ensure fullPath is still contained in basePath
+        if (!fullPath.startsWith(basePath)) {
+            log.info("Requested path {} is outside of base directory {}", fullPath, basePath);
+            throw new FileNotFoundException(file); // or use a dedicated exception
+        }
 
         logService.log(tokenData.tenant, LogService.EventType.GET, tokenData.subject(), fullPath.toString());
         log.info("{} get {}", tokenData.subject(), fullPath);
