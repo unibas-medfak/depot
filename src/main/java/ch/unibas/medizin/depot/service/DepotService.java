@@ -23,6 +23,7 @@ import org.springframework.util.StringUtils;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.io.IOException;
+import java.io.File;
 import java.nio.file.*;
 import java.nio.file.attribute.BasicFileAttributes;
 import java.util.*;
@@ -108,8 +109,14 @@ public record DepotService(
     public PutFileResponseDto put(final MultipartFile file, final String path, final boolean hash) {
         final var tokenData = getTokenData();
         final var normalizedPath = DepotUtil.normalizePath(path);
-        final var fullPath = tokenData.basePath().resolve(normalizedPath);
-        final var fullPathAndFile = fullPath.resolve(Objects.requireNonNull(file.getOriginalFilename()));
+        final var fullPath = tokenData.basePath().resolve(normalizedPath).normalize().toAbsolutePath();
+        final var fullPathAndFile = fullPath.resolve(Objects.requireNonNull(file.getOriginalFilename())).normalize().toAbsolutePath();
+
+        // Ensure the resolved file stays within the tenant/base path
+        if (!fullPathAndFile.startsWith(fullPath + File.separator)) {
+            log.error("Attempt to store file outside permitted path: {}", fullPathAndFile);
+            throw new IllegalArgumentException("Invalid file path");
+        }
 
         logService.log(tokenData.tenant, LogService.EventType.PUT, tokenData.subject(), fullPathAndFile.toString());
         log.info("{} put {}", tokenData.subject(), fullPathAndFile);
