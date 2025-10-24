@@ -6,14 +6,14 @@ import ch.unibas.medizin.depot.dto.AccessTokenResponseDto;
 import ch.unibas.medizin.depot.dto.QrCodePayloadDto;
 import com.auth0.jwt.JWT;
 import com.auth0.jwt.algorithms.Algorithm;
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import io.nayuki.qrcodegen.QrCode;
 import org.jspecify.annotations.NullMarked;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
+import tools.jackson.core.JacksonException;
+import tools.jackson.databind.ObjectMapper;
 
 import javax.imageio.ImageIO;
 import java.awt.image.BufferedImage;
@@ -47,7 +47,7 @@ public record AccessTokenService(
             final var jsonQrCodePayload = objectMapper.writeValueAsString(qrCodePayload);
             final var qrCode = QrCode.encodeText(jsonQrCodePayload, QrCode.Ecc.LOW);
             return toImage(qrCode);
-        } catch (JsonProcessingException e) {
+        } catch (JacksonException e) {
             log.error("Could not encode payload", e);
             throw new RuntimeException(e);
         }

@@ -161,6 +161,7 @@ public class DepotProperties {
             var encodedDefaultTenantPassword = passwordEncoder.encode(randomPassword);
 
             try {
+                assert encodedDefaultTenantPassword != null;
                 Files.createDirectories(baseDirectory);
                 Files.writeString(baseDirectory.resolve(defaultTenantPasswordFilename), encodedDefaultTenantPassword);
                 return Map.of(DEFAULT_TENANT_NAME, new Tenant(encodedDefaultTenantPassword));

@@ -9,14 +9,14 @@ import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.boot.web.server.test.LocalServerPort;
-import org.springframework.boot.web.server.test.client.TestRestTemplate;
+import org.springframework.boot.test.web.server.LocalServerPort;
 import org.springframework.core.io.ByteArrayResource;
 import org.springframework.core.io.FileSystemResource;
-import org.springframework.http.*;
-import org.springframework.util.LinkedMultiValueMap;
-import org.springframework.util.MultiValueMap;
-import org.springframework.util.StreamUtils;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
+import org.springframework.http.client.MultipartBodyBuilder;
+import org.springframework.test.web.reactive.server.WebTestClient;
+import org.springframework.web.reactive.function.BodyInserters;
 
 import java.io.BufferedOutputStream;
 import java.io.File;
@@ -37,164 +37,241 @@ import static org.junit.jupiter.api.Assertions.*;
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
 public class ApiControllerTests {
 
-    private final String baseUrl = "http://localhost:";
-
     private final LocalDate today = LocalDate.now(ZoneId.systemDefault());
 
     private final LocalDate tomorrow = LocalDate.now(ZoneId.systemDefault()).plusDays(1);
 
-    @LocalServerPort
-    private int port;
-
     @Autowired
     private DepotProperties depotProperties;
 
-    private final TestRestTemplate restTemplate = new TestRestTemplate();
+    @LocalServerPort
+    private int port;
 
     @Test
     public void Register_client_with_valid_request() {
-        var validRegisterRequest = new HttpEntity<>(new AccessTokenRequestDto("tenant_b", "tenant_b_secret", "re_al-m1", "Sub Ject 01.01.2099", "r", tomorrow));
-        var validRegisterResponse = restTemplate.postForEntity(baseUrl + port + "/admin/register", validRegisterRequest, AccessTokenResponseDto.class);
-        assertEquals(HttpStatus.OK, validRegisterResponse.getStatusCode());
-        assertNotNull(validRegisterResponse.getBody());
-        assertNotNull(validRegisterResponse.getBody().token());
+        var validRegisterRequest = new AccessTokenRequestDto("tenant_b", "tenant_b_secret", "re_al-m1", "Sub Ject 01.01.2099", "r", tomorrow);
+        var webTestClient = WebTestClient.bindToServer().baseUrl("http://localhost:" + port).build();
+        var validRegisterResponse = webTestClient.post()
+                .uri("/admin/register")
+                .bodyValue(validRegisterRequest)
+                .exchange()
+                .expectStatus().isOk()
+                .expectBody(AccessTokenResponseDto.class)
+                .returnResult()
+                .getResponseBody();
+        assertNotNull(validRegisterResponse);
+        assertNotNull(validRegisterResponse.token());
     }
 
     @Test
     public void Request_token() {
-        var validRegisterRequest = new HttpEntity<>(new AccessTokenRequestDto("tenant_a", "tenant_a_secret", "re_al-m1", "subject1", "r", LocalDate.of(2037, 11, 13)));
-        var validRegisterResponse = restTemplate.postForEntity(baseUrl + port + "/admin/register", validRegisterRequest, AccessTokenResponseDto.class);
-        assertEquals(HttpStatus.OK, validRegisterResponse.getStatusCode());
+        var validRegisterRequest = new AccessTokenRequestDto("tenant_a", "tenant_a_secret", "re_al-m1", "subject1", "r", LocalDate.of(2037, 11, 13));
+        var webTestClient = WebTestClient.bindToServer().baseUrl("http://localhost:" + port).build();
+        var validRegisterResponse = webTestClient.post()
+                .uri("/admin/register")
+                .bodyValue(validRegisterRequest)
+                .exchange()
+                .expectStatus().isOk()
+                .expectBody(AccessTokenResponseDto.class)
+                .returnResult()
+                .getResponseBody();
 
-        assertNotNull(validRegisterResponse.getBody());
+        assertNotNull(validRegisterResponse);
         var referenceToken = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJkZXBvdCIsInRlbmFudCI6InRlbmFudF9hIiwicmVhbG0iOiJyZV9hbC1tMSIsIm1vZGUiOiJyIiwic3ViIjoic3ViamVjdDEiLCJleHAiOjIxNDE2ODMyMDB9.PHL7p-vOX9ZbmkGZ8aBmnFVPDX00hCHGqt6U3G4Abm8";
-        assertEquals(referenceToken, validRegisterResponse.getBody().token());
+        assertEquals(referenceToken, validRegisterResponse.token());
     }
 
     @Test
     public void Request_token_qr() throws IOException {
-        var validRegisterRequest = new HttpEntity<>(new AccessTokenRequestDto("tenant_a", "tenant_a_secret", "re_al-m2", "subject2", "w", LocalDate.of(2050, 12, 31)));
-        var validRegisterResponse = restTemplate.postForEntity(baseUrl + port + "/admin/qr", validRegisterRequest, byte[].class);
-        assertEquals(HttpStatus.OK, validRegisterResponse.getStatusCode());
+        var validRegisterRequest = new AccessTokenRequestDto("tenant_a", "tenant_a_secret", "re_al-m2", "subject2", "w", LocalDate.of(2050, 12, 31));
+        var webTestClient = WebTestClient.bindToServer().baseUrl("http://localhost:" + port).build();
+        var validRegisterResponse = webTestClient.post()
+                .uri("/admin/qr")
+                .bodyValue(validRegisterRequest)
+                .exchange()
+                .expectStatus().isOk()
+                .expectBody(byte[].class)
+                .returnResult()
+                .getResponseBody();
 
-        assertNotNull(validRegisterResponse.getBody());
-        // Files.write(new File("qr.png").toPath(), validRegisterResponse.getBody());
+        assertNotNull(validRegisterResponse);
+        // Files.write(new File("qr.png").toPath(), validRegisterResponse);
 
         var referenceBytes = IOUtils.resourceToByteArray("/qr.png");
-        assertArrayEquals(referenceBytes, validRegisterResponse.getBody());
+        assertArrayEquals(referenceBytes, validRegisterResponse);
     }
 
     @Test
     public void Deny_client_with_invalid_password() {
-        var invalidRegisterRequest = new HttpEntity<>(new AccessTokenRequestDto("tenant_a", "wrong_secret", "realm", "subject", "r", tomorrow));
-        var invalidRegisterResponse = restTemplate.postForEntity(baseUrl + port + "/admin/register", invalidRegisterRequest, AccessTokenResponseDto.class);
-        assertEquals(HttpStatus.UNAUTHORIZED, invalidRegisterResponse.getStatusCode());
+        var invalidRegisterRequest = new AccessTokenRequestDto("tenant_a", "wrong_secret", "realm", "subject", "r", tomorrow);
+        var webTestClient = WebTestClient.bindToServer().baseUrl("http://localhost:" + port).build();
+        webTestClient.post()
+                .uri("/admin/register")
+                .bodyValue(invalidRegisterRequest)
+                .exchange()
+                .expectStatus().isUnauthorized();
     }
 
     @Test
     public void Deny_client_with_invalid_tenant() {
-        var invalidRegisterRequest = new HttpEntity<>(new AccessTokenRequestDto("tenant_c", "tenant_a_secret", "realm", "subject", "r", tomorrow));
-        var invalidRegisterResponse = restTemplate.postForEntity(baseUrl + port + "/admin/register", invalidRegisterRequest, AccessTokenResponseDto.class);
-        assertEquals(HttpStatus.UNAUTHORIZED, invalidRegisterResponse.getStatusCode());
+        var invalidRegisterRequest = new AccessTokenRequestDto("tenant_c", "tenant_a_secret", "realm", "subject", "r", tomorrow);
+        var webTestClient = WebTestClient.bindToServer().baseUrl("http://localhost:" + port).build();
+        webTestClient.post()
+                .uri("/admin/register")
+                .bodyValue(invalidRegisterRequest)
+                .exchange()
+                .expectStatus().isUnauthorized();
     }
 
     @Test
     public void Deny_client_with_invalid_tenant_name() {
-        var invalidRegisterRequest = new HttpEntity<>(new AccessTokenRequestDto("tenant a", "tenant_a_secret", "realm", "subject", "r", tomorrow));
-        var invalidRegisterResponse = restTemplate.postForEntity(baseUrl + port + "/admin/register", invalidRegisterRequest, AccessTokenResponseDto.class);
-        assertEquals(HttpStatus.BAD_REQUEST, invalidRegisterResponse.getStatusCode());
+        var invalidRegisterRequest = new AccessTokenRequestDto("tenant a", "tenant_a_secret", "realm", "subject", "r", tomorrow);
+        var webTestClient = WebTestClient.bindToServer().baseUrl("http://localhost:" + port).build();
+        webTestClient.post()
+                .uri("/admin/register")
+                .bodyValue(invalidRegisterRequest)
+                .exchange()
+                .expectStatus().isBadRequest();
     }
 
     @Test
     public void Deny_client_with_invalid_realm_name() {
-        var invalidRegisterRequest = new HttpEntity<>(new AccessTokenRequestDto("tenant_a", "tenant_a_secret", "realm$_", "subject", "r", tomorrow));
-        var invalidRegisterResponse = restTemplate.postForEntity(baseUrl + port + "/admin/register", invalidRegisterRequest, AccessTokenResponseDto.class);
-        assertEquals(HttpStatus.BAD_REQUEST, invalidRegisterResponse.getStatusCode());
+        var invalidRegisterRequest = new AccessTokenRequestDto("tenant_a", "tenant_a_secret", "realm$_", "subject", "r", tomorrow);
+        var webTestClient = WebTestClient.bindToServer().baseUrl("http://localhost:" + port).build();
+        webTestClient.post()
+                .uri("/admin/register")
+                .bodyValue(invalidRegisterRequest)
+                .exchange()
+                .expectStatus().isBadRequest();
     }
 
     @Test
     public void Deny_client_with_invalid_blank_in_realm_name() {
-        var invalidRegisterRequest = new HttpEntity<>(new AccessTokenRequestDto("tenant_a", "tenant_a_secret", "re alm", "subject", "r", tomorrow));
-        var invalidRegisterResponse = restTemplate.postForEntity(baseUrl + port + "/admin/register", invalidRegisterRequest, AccessTokenResponseDto.class);
-        assertEquals(HttpStatus.BAD_REQUEST, invalidRegisterResponse.getStatusCode());
+        var invalidRegisterRequest = new AccessTokenRequestDto("tenant_a", "tenant_a_secret", "re alm", "subject", "r", tomorrow);
+        var webTestClient = WebTestClient.bindToServer().baseUrl("http://localhost:" + port).build();
+        webTestClient.post()
+                .uri("/admin/register")
+                .bodyValue(invalidRegisterRequest)
+                .exchange()
+                .expectStatus().isBadRequest();
     }
 
     @Test
     public void Deny_client_with_invalid_subject() {
-        var invalidRegisterRequest = new HttpEntity<>(new AccessTokenRequestDto("tenant_a", "tenant_a_secret", "realm", " ", "r", tomorrow));
-        var invalidRegisterResponse = restTemplate.postForEntity(baseUrl + port + "/admin/register", invalidRegisterRequest, AccessTokenResponseDto.class);
-        assertEquals(HttpStatus.BAD_REQUEST, invalidRegisterResponse.getStatusCode());
+        var invalidRegisterRequest = new AccessTokenRequestDto("tenant_a", "tenant_a_secret", "realm", " ", "r", tomorrow);
+        var webTestClient = WebTestClient.bindToServer().baseUrl("http://localhost:" + port).build();
+        webTestClient.post()
+                .uri("/admin/register")
+                .bodyValue(invalidRegisterRequest)
+                .exchange()
+                .expectStatus().isBadRequest();
     }
 
     @Test
     public void Deny_client_with_blank_realm() {
-        var invalidRegisterRequest = new HttpEntity<>(new AccessTokenRequestDto("tenant_a", "tenant_a_secret", "", "subject", "r", tomorrow));
-        var invalidRegisterResponse = restTemplate.postForEntity(baseUrl + port + "/admin/register", invalidRegisterRequest, AccessTokenResponseDto.class);
-        assertEquals(HttpStatus.BAD_REQUEST, invalidRegisterResponse.getStatusCode());
+        var invalidRegisterRequest = new AccessTokenRequestDto("tenant_a", "tenant_a_secret", "", "subject", "r", tomorrow);
+        var webTestClient = WebTestClient.bindToServer().baseUrl("http://localhost:" + port).build();
+        webTestClient.post()
+                .uri("/admin/register")
+                .bodyValue(invalidRegisterRequest)
+                .exchange()
+                .expectStatus().isBadRequest();
     }
 
     @Test
     public void Deny_client_with_blank_subject() {
-        var invalidRegisterRequest = new HttpEntity<>(new AccessTokenRequestDto("tenant_a", "tenant_a_secret", "realm", "", "r", tomorrow));
-        var invalidRegisterResponse = restTemplate.postForEntity(baseUrl + port + "/admin/register", invalidRegisterRequest, AccessTokenResponseDto.class);
-        assertEquals(HttpStatus.BAD_REQUEST, invalidRegisterResponse.getStatusCode());
+        var invalidRegisterRequest = new AccessTokenRequestDto("tenant_a", "tenant_a_secret", "realm", "", "r", tomorrow);
+        var webTestClient = WebTestClient.bindToServer().baseUrl("http://localhost:" + port).build();
+        webTestClient.post()
+                .uri("/admin/register")
+                .bodyValue(invalidRegisterRequest)
+                .exchange()
+                .expectStatus().isBadRequest();
     }
 
     @Test
     public void Deny_client_with_linebreak_in_realm() {
-        var invalidRegisterRequest = new HttpEntity<>(new AccessTokenRequestDto("tenant_a", "tenant_a_secret", "re\nlm", "subject", "r", tomorrow));
-        var invalidRegisterResponse = restTemplate.postForEntity(baseUrl + port + "/admin/register", invalidRegisterRequest, AccessTokenResponseDto.class);
-        assertEquals(HttpStatus.BAD_REQUEST, invalidRegisterResponse.getStatusCode());
+        var invalidRegisterRequest = new AccessTokenRequestDto("tenant_a", "tenant_a_secret", "re\nlm", "subject", "r", tomorrow);
+        var webTestClient = WebTestClient.bindToServer().baseUrl("http://localhost:" + port).build();
+        webTestClient.post()
+                .uri("/admin/register")
+                .bodyValue(invalidRegisterRequest)
+                .exchange()
+                .expectStatus().isBadRequest();
     }
 
     @Test
     public void Deny_client_with_linebreak_in_subject() {
-        var invalidRegisterRequest = new HttpEntity<>(new AccessTokenRequestDto("tenant_a", "tenant_a_secret", "realm", "sub\nject", "r", tomorrow));
-        var invalidRegisterResponse = restTemplate.postForEntity(baseUrl + port + "/admin/register", invalidRegisterRequest, AccessTokenResponseDto.class);
-        assertEquals(HttpStatus.BAD_REQUEST, invalidRegisterResponse.getStatusCode());
+        var invalidRegisterRequest = new AccessTokenRequestDto("tenant_a", "tenant_a_secret", "realm", "sub\nject", "r", tomorrow);
+        var webTestClient = WebTestClient.bindToServer().baseUrl("http://localhost:" + port).build();
+        webTestClient.post()
+                .uri("/admin/register")
+                .bodyValue(invalidRegisterRequest)
+                .exchange()
+                .expectStatus().isBadRequest();
     }
 
     @Test
     public void Deny_client_with_invalid_admin_password() {
-        var invalidRegisterRequest = new HttpEntity<>(new AccessTokenRequestDto("tenant_a", "wrong_password", "realm", "subject", "r", tomorrow));
-        var invalidRegisterResponse = restTemplate.postForEntity(baseUrl + port + "/admin/register", invalidRegisterRequest, AccessTokenResponseDto.class);
-        assertEquals(HttpStatus.UNAUTHORIZED, invalidRegisterResponse.getStatusCode());
+        var invalidRegisterRequest = new AccessTokenRequestDto("tenant_a", "wrong_password", "realm", "subject", "r", tomorrow);
+        var webTestClient = WebTestClient.bindToServer().baseUrl("http://localhost:" + port).build();
+        webTestClient.post()
+                .uri("/admin/register")
+                .bodyValue(invalidRegisterRequest)
+                .exchange()
+                .expectStatus().isUnauthorized();
     }
 
     @Test
     public void Deny_client_with_expiration_date_not_in_the_future() {
-        var todayRegisterRequest = new HttpEntity<>(new AccessTokenRequestDto("tenant_a", "tenant_a_secret", "realm", "subject", "r", today));
-        var todayRegisterResponse = restTemplate.postForEntity(baseUrl + port + "/admin/register", todayRegisterRequest, AccessTokenResponseDto.class);
-        assertEquals(HttpStatus.BAD_REQUEST, todayRegisterResponse.getStatusCode());
+        var todayRegisterRequest = new AccessTokenRequestDto("tenant_a", "tenant_a_secret", "realm", "subject", "r", today);
+        var webTestClient = WebTestClient.bindToServer().baseUrl("http://localhost:" + port).build();
+        webTestClient.post()
+                .uri("/admin/register")
+                .bodyValue(todayRegisterRequest)
+                .exchange()
+                .expectStatus().isBadRequest();
     }
 
     @Test
     @Disabled
     public void Deny_requests_from_client_with_expiration_date_of_today() {
-        var todayRegisterRequest = new HttpEntity<>(new AccessTokenRequestDto("tenant_a", "tenant_a_secret", "realm", "subject", "r", today));
-        var todayRegisterResponse = restTemplate.postForEntity(baseUrl + port + "/admin/register", todayRegisterRequest, AccessTokenResponseDto.class);
-        assertEquals(HttpStatus.OK, todayRegisterResponse.getStatusCode());
-        assertNotNull(todayRegisterResponse.getBody());
-        var headers = getHeaders(todayRegisterResponse.getBody().token());
-        headers.setContentType(MediaType.APPLICATION_JSON);
-        var listRequest = new HttpEntity<>(headers);
-        var files = restTemplate.exchange(baseUrl + port + "/list?path=///test//a", HttpMethod.GET, listRequest, FileDto[].class);
-
-        assertEquals(HttpStatus.FORBIDDEN, files.getStatusCode());
+        var todayRegisterRequest = new AccessTokenRequestDto("tenant_a", "tenant_a_secret", "realm", "subject", "r", today);
+        var webTestClient = WebTestClient.bindToServer().baseUrl("http://localhost:" + port).build();
+        var todayRegisterResponse = webTestClient.post()
+                .uri("/admin/register")
+                .bodyValue(todayRegisterRequest)
+                .exchange()
+                .expectStatus().isOk()
+                .expectBody(AccessTokenResponseDto.class)
+                .returnResult()
+                .getResponseBody();
+        assertNotNull(todayRegisterResponse);
+        var token = todayRegisterResponse.token();
+        webTestClient.get()
+                .uri("/list?path=///test//a")
+                .header("Authorization", "Bearer " + token)
+                .exchange()
+                .expectStatus().isForbidden();
     }
 
     @Test
     public void Deny_file_with_invalid_name() throws IOException {
         FileUtils.deleteDirectory(depotProperties.getBaseDirectory().resolve("tenant_a").resolve("realm").toFile());
 
-        var registerRequest = new HttpEntity<>(new AccessTokenRequestDto("tenant_a", "tenant_a_secret", "realm", "subject", "rw", tomorrow));
-        var registerResponse = restTemplate.postForEntity(baseUrl + port + "/admin/register", registerRequest, AccessTokenResponseDto.class);
+        var registerRequest = new AccessTokenRequestDto("tenant_a", "tenant_a_secret", "realm", "subject", "rw", tomorrow);
+        var webTestClient = WebTestClient.bindToServer().baseUrl("http://localhost:" + port).build();
+        var registerResponse = webTestClient.post()
+                .uri("/admin/register")
+                .bodyValue(registerRequest)
+                .exchange()
+                .expectStatus().isOk()
+                .expectBody(AccessTokenResponseDto.class)
+                .returnResult()
+                .getResponseBody();
 
-        assertNotNull(registerResponse.getBody());
-        var headers = getHeaders(registerResponse.getBody().token());
-        headers.setContentType(MediaType.MULTIPART_FORM_DATA);
-
-        var body = new LinkedMultiValueMap<String, Object>();
+        assertNotNull(registerResponse);
+        var token = registerResponse.token();
         var bytes = new byte[]{1};
 
         var byteArrayResource = new ByteArrayResource(bytes) {
@@ -204,137 +281,194 @@ public class ApiControllerTests {
             }
         };
 
-        body.add("file", byteArrayResource);
+        var bodyBuilder = new MultipartBodyBuilder();
+        bodyBuilder.part("file", byteArrayResource);
 
-        var requestEntity = new HttpEntity<MultiValueMap<String, Object>>(body, headers);
-        var serverUrl = baseUrl + port + "/put?path=/test&hash=true";
-        var response = restTemplate.postForEntity(serverUrl, requestEntity, PutFileResponseDto.class);
-
-        assertEquals(HttpStatus.BAD_REQUEST, response.getStatusCode());
+        webTestClient.post()
+                .uri("/put?path=/test&hash=true")
+                .header("Authorization", "Bearer " + token)
+                .contentType(MediaType.MULTIPART_FORM_DATA)
+                .body(BodyInserters.fromMultipartData(bodyBuilder.build()))
+                .exchange()
+                .expectStatus().isBadRequest();
     }
 
     @Test
     void Deny_write_file_to_folder_with_same_name() throws IOException {
         FileUtils.deleteDirectory(depotProperties.getBaseDirectory().resolve("tenant_a").resolve("realm").toFile());
 
-        var registerRequest = new HttpEntity<>(new AccessTokenRequestDto("tenant_a", "tenant_a_secret", "realm", "subject", "rw", tomorrow));
-        var registerResponse = restTemplate.postForEntity(baseUrl + port + "/admin/register", registerRequest, AccessTokenResponseDto.class);
+        var registerRequest = new AccessTokenRequestDto("tenant_a", "tenant_a_secret", "realm", "subject", "rw", tomorrow);
+        var webTestClient = WebTestClient.bindToServer().baseUrl("http://localhost:" + port).build();
+        var registerResponse = webTestClient.post()
+                .uri("/admin/register")
+                .bodyValue(registerRequest)
+                .exchange()
+                .expectStatus().isOk()
+                .expectBody(AccessTokenResponseDto.class)
+                .returnResult()
+                .getResponseBody();
 
-        assertNotNull(registerResponse.getBody());
-        var headers = getHeaders(registerResponse.getBody().token());
-        headers.setContentType(MediaType.MULTIPART_FORM_DATA);
-
+        assertNotNull(registerResponse);
+        var token = registerResponse.token();
         var bytes = new byte[]{1};
 
-        var folderBody = new LinkedMultiValueMap<String, Object>();
         var folderByteArrayResource = new ByteArrayResource(bytes) {
             @Override
             public String getFilename() {
                 return "folder";
             }
         };
-        folderBody.add("file", folderByteArrayResource);
 
-        var requestEntity = new HttpEntity<MultiValueMap<String, Object>>(folderBody, headers);
-        var serverUrl = baseUrl + port + "/put?path=/&hash=true";
-        var response = restTemplate.postForEntity(serverUrl, requestEntity, PutFileResponseDto.class);
+        var folderBodyBuilder = new MultipartBodyBuilder();
+        folderBodyBuilder.part("file", folderByteArrayResource);
 
-        assertEquals(HttpStatus.OK, response.getStatusCode());
+        webTestClient.post()
+                .uri("/put?path=/&hash=true")
+                .header("Authorization", "Bearer " + token)
+                .contentType(MediaType.MULTIPART_FORM_DATA)
+                .body(BodyInserters.fromMultipartData(folderBodyBuilder.build()))
+                .exchange()
+                .expectStatus().isOk();
 
-        var fileBody = new LinkedMultiValueMap<String, Object>();
         var fileByteArrayResource = new ByteArrayResource(bytes) {
             @Override
             public String getFilename() {
                 return "file.txt";
             }
         };
-        fileBody.add("file", fileByteArrayResource);
 
-        requestEntity = new HttpEntity<>(fileBody, headers);
-        serverUrl = baseUrl + port + "/put?path=/folder&hash=true";
-        response = restTemplate.postForEntity(serverUrl, requestEntity, PutFileResponseDto.class);
+        var fileBodyBuilder = new MultipartBodyBuilder();
+        fileBodyBuilder.part("file", fileByteArrayResource);
 
-        assertEquals(HttpStatus.CONFLICT, response.getStatusCode());
+        webTestClient.post()
+                .uri("/put?path=/folder&hash=true")
+                .header("Authorization", "Bearer " + token)
+                .contentType(MediaType.MULTIPART_FORM_DATA)
+                .body(BodyInserters.fromMultipartData(fileBodyBuilder.build()))
+                .exchange()
+                .expectStatus().isEqualTo(HttpStatus.CONFLICT);
     }
 
     @Test
     void Deny_write_folder_to_file_with_same_name() throws IOException {
         FileUtils.deleteDirectory(depotProperties.getBaseDirectory().resolve("tenant_a").resolve("realm").toFile());
 
-        var registerRequest = new HttpEntity<>(new AccessTokenRequestDto("tenant_a", "tenant_a_secret", "realm", "subject", "rw", tomorrow));
-        var registerResponse = restTemplate.postForEntity(baseUrl + port + "/admin/register", registerRequest, AccessTokenResponseDto.class);
+        var registerRequest = new AccessTokenRequestDto("tenant_a", "tenant_a_secret", "realm", "subject", "rw", tomorrow);
+        var webTestClient = WebTestClient.bindToServer().baseUrl("http://localhost:" + port).build();
+        var registerResponse = webTestClient.post()
+                .uri("/admin/register")
+                .bodyValue(registerRequest)
+                .exchange()
+                .expectStatus().isOk()
+                .expectBody(AccessTokenResponseDto.class)
+                .returnResult()
+                .getResponseBody();
 
-        assertNotNull(registerResponse.getBody());
-        var headers = getHeaders(registerResponse.getBody().token());
-        headers.setContentType(MediaType.MULTIPART_FORM_DATA);
-
+        assertNotNull(registerResponse);
+        var token = registerResponse.token();
         var bytes = new byte[]{1};
 
-        var fileBody = new LinkedMultiValueMap<String, Object>();
         var fileByteArrayResource = new ByteArrayResource(bytes) {
             @Override
             public String getFilename() {
                 return "file.txt";
             }
         };
-        fileBody.add("file", fileByteArrayResource);
 
-        var requestEntity = new HttpEntity<MultiValueMap<String, Object>>(fileBody, headers);
-        var serverUrl = baseUrl + port + "/put?path=/folder&hash=true";
-        var response = restTemplate.postForEntity(serverUrl, requestEntity, PutFileResponseDto.class);
+        var fileBodyBuilder = new MultipartBodyBuilder();
+        fileBodyBuilder.part("file", fileByteArrayResource);
 
-        assertEquals(HttpStatus.OK, response.getStatusCode());
+        webTestClient.post()
+                .uri("/put?path=/folder&hash=true")
+                .header("Authorization", "Bearer " + token)
+                .contentType(MediaType.MULTIPART_FORM_DATA)
+                .body(BodyInserters.fromMultipartData(fileBodyBuilder.build()))
+                .exchange()
+                .expectStatus().isOk();
 
-        var folderBody = new LinkedMultiValueMap<String, Object>();
         var folderByteArrayResource = new ByteArrayResource(bytes) {
             @Override
             public String getFilename() {
                 return "folder";
             }
         };
-        folderBody.add("file", folderByteArrayResource);
 
-        requestEntity = new HttpEntity<>(folderBody, headers);
-        serverUrl = baseUrl + port + "/put?path=/&hash=true";
-        response = restTemplate.postForEntity(serverUrl, requestEntity, PutFileResponseDto.class);
+        var folderBodyBuilder = new MultipartBodyBuilder();
+        folderBodyBuilder.part("file", folderByteArrayResource);
 
-        assertEquals(HttpStatus.CONFLICT, response.getStatusCode());
+        webTestClient.post()
+                .uri("/put?path=/&hash=true")
+                .header("Authorization", "Bearer " + token)
+                .contentType(MediaType.MULTIPART_FORM_DATA)
+                .body(BodyInserters.fromMultipartData(folderBodyBuilder.build()))
+                .exchange()
+                .expectStatus().isEqualTo(HttpStatus.CONFLICT);
     }
 
     @Test
     public void Put_file() throws IOException {
         FileUtils.deleteDirectory(depotProperties.getBaseDirectory().resolve("tenant_a").resolve("realm").toFile());
 
-        var registerRequest = new HttpEntity<>(new AccessTokenRequestDto("tenant_a", "tenant_a_secret", "realm", "subject", "rw", tomorrow));
-        var registerResponse = restTemplate.postForEntity(baseUrl + port + "/admin/register", registerRequest, AccessTokenResponseDto.class);
+        var registerRequest = new AccessTokenRequestDto("tenant_a", "tenant_a_secret", "realm", "subject", "rw", tomorrow);
+        var webTestClient = WebTestClient.bindToServer().baseUrl("http://localhost:" + port).build();
+        var registerResponse = webTestClient.post()
+                .uri("/admin/register")
+                .bodyValue(registerRequest)
+                .exchange()
+                .expectStatus().isOk()
+                .expectBody(AccessTokenResponseDto.class)
+                .returnResult()
+                .getResponseBody();
 
-        assertNotNull(registerResponse.getBody());
-        var headers = getHeaders(registerResponse.getBody().token());
-        headers.setContentType(MediaType.MULTIPART_FORM_DATA);
+        assertNotNull(registerResponse);
+        var token = registerResponse.token();
 
-        var body = new LinkedMultiValueMap<String, Object>();
         var fileSize = 10 * 1024 * 1024;
         var randomFile = randomFile(fileSize);
         var resource = new FileSystemResource(randomFile);
-        body.add("file", resource);
 
-        var requestEntity = new HttpEntity<MultiValueMap<String, Object>>(body, headers);
-        var serverUrl = baseUrl + port + "/put?path=//test/findMe//&hash=true";
-        var response = restTemplate.postForEntity(serverUrl, requestEntity, PutFileResponseDto.class);
+        var bodyBuilder1 = new MultipartBodyBuilder();
+        bodyBuilder1.part("file", resource);
 
-        assertNotNull(response.getBody());
-        assertEquals(fileSize, response.getBody().bytes());
+        var response = webTestClient.post()
+                .uri("/put?path=//test/findMe//&hash=true")
+                .header("Authorization", "Bearer " + token)
+                .contentType(MediaType.MULTIPART_FORM_DATA)
+                .body(BodyInserters.fromMultipartData(bodyBuilder1.build()))
+                .exchange()
+                .expectStatus().isOk()
+                .expectBody(PutFileResponseDto.class)
+                .returnResult()
+                .getResponseBody();
 
-        serverUrl = baseUrl + port + "/put?path=//test/findMe/b/&hash=false";
-        response = restTemplate.postForEntity(serverUrl, requestEntity, PutFileResponseDto.class);
+        assertNotNull(response);
+        assertEquals(fileSize, response.bytes());
 
-        assertNotNull(response.getBody());
-        assertEquals(fileSize, response.getBody().bytes());
+        var bodyBuilder2 = new MultipartBodyBuilder();
+        bodyBuilder2.part("file", resource);
 
-        headers.setContentType(MediaType.APPLICATION_JSON);
-        var listRequest = new HttpEntity<>(headers);
-        var listResponse = restTemplate.exchange(baseUrl + port + "/list?path=///test//findMe", HttpMethod.GET, listRequest, FileDto[].class);
-        var listBody = listResponse.getBody();
+        var response2 = webTestClient.post()
+                .uri("/put?path=//test/findMe/b/&hash=false")
+                .header("Authorization", "Bearer " + token)
+                .contentType(MediaType.MULTIPART_FORM_DATA)
+                .body(BodyInserters.fromMultipartData(bodyBuilder2.build()))
+                .exchange()
+                .expectStatus().isOk()
+                .expectBody(PutFileResponseDto.class)
+                .returnResult()
+                .getResponseBody();
+
+        assertNotNull(response2);
+        assertEquals(fileSize, response2.bytes());
+
+        var listBody = webTestClient.get()
+                .uri("/list?path=///test//findMe")
+                .header("Authorization", "Bearer " + token)
+                .exchange()
+                .expectStatus().isOk()
+                .expectBody(FileDto[].class)
+                .returnResult()
+                .getResponseBody();
         assertNotNull(listBody);
         assertEquals(2, listBody.length);
 
@@ -351,9 +485,15 @@ public class ApiControllerTests {
         assertTrue(now.minusSeconds(5).isBefore(modified));
         assertEquals(fileSize, fileEntry.size());
 
-        var logRequest = new HttpEntity<>(new LogRequestDto("tenant_a", "tenant_a_secret"));
-        var logResponse = restTemplate.postForEntity(baseUrl + port + "/admin/log", logRequest, String[].class);
-        var logBody = logResponse.getBody();
+        var logRequest = new LogRequestDto("tenant_a", "tenant_a_secret");
+        var logBody = webTestClient.post()
+                .uri("/admin/log")
+                .bodyValue(logRequest)
+                .exchange()
+                .expectStatus().isOk()
+                .expectBody(String[].class)
+                .returnResult()
+                .getResponseBody();
         assertNotNull(logBody);
         var findMe = Arrays.stream(logBody).filter(a -> a.contains("findMe")).findFirst().orElseThrow();
         assertNotNull(findMe);
@@ -361,248 +501,371 @@ public class ApiControllerTests {
 
     @Test
     public void Deny_read_only_put() throws IOException {
-        var registerRequest = new HttpEntity<>(new AccessTokenRequestDto("tenant_a", "tenant_a_secret", "realm", "subject", "r", tomorrow));
-        var registerResponse = restTemplate.postForEntity(baseUrl + port + "/admin/register", registerRequest, AccessTokenResponseDto.class);
+        var registerRequest = new AccessTokenRequestDto("tenant_a", "tenant_a_secret", "realm", "subject", "r", tomorrow);
+        var webTestClient = WebTestClient.bindToServer().baseUrl("http://localhost:" + port).build();
+        var registerResponse = webTestClient.post()
+                .uri("/admin/register")
+                .bodyValue(registerRequest)
+                .exchange()
+                .expectStatus().isOk()
+                .expectBody(AccessTokenResponseDto.class)
+                .returnResult()
+                .getResponseBody();
 
-        assertNotNull(registerResponse.getBody());
-        var headers = getHeaders(registerResponse.getBody().token());
-        headers.setContentType(MediaType.MULTIPART_FORM_DATA);
+        assertNotNull(registerResponse);
+        var token = registerResponse.token();
 
-        var body = new LinkedMultiValueMap<String, Object>();
         var fileSize = 10 * 1024 * 1024;
         var randomFile = randomFile(fileSize);
         var resource = new FileSystemResource(randomFile);
-        body.add("file", resource);
 
-        var requestEntity = new HttpEntity<MultiValueMap<String, Object>>(body, headers);
-        var serverUrl = baseUrl + port + "/put?path=//test/a//&hash=true";
-        var response = restTemplate.postForEntity(serverUrl, requestEntity, PutFileResponseDto.class);
+        var bodyBuilder = new MultipartBodyBuilder();
+        bodyBuilder.part("file", resource);
 
-        assertEquals(HttpStatus.UNAUTHORIZED, response.getStatusCode());
+        webTestClient.post()
+                .uri("/put?path=//test/a//&hash=true")
+                .header("Authorization", "Bearer " + token)
+                .contentType(MediaType.MULTIPART_FORM_DATA)
+                .body(BodyInserters.fromMultipartData(bodyBuilder.build()))
+                .exchange()
+                .expectStatus().isUnauthorized();
     }
 
     @Test
     public void Get_file() throws IOException {
-        var registerRequest = new HttpEntity<>(new AccessTokenRequestDto("tenant_b", "tenant_b_secret", "realm", "subject", "rw", tomorrow));
-        var registerResponse = restTemplate.postForEntity(baseUrl + port + "/admin/register", registerRequest, AccessTokenResponseDto.class);
+        var registerRequest = new AccessTokenRequestDto("tenant_b", "tenant_b_secret", "realm", "subject", "rw", tomorrow);
+        var webTestClient = WebTestClient
+                .bindToServer()
+                .baseUrl("http://localhost:" + port)
+                .codecs(configurer -> configurer.defaultCodecs().maxInMemorySize(150 * 1024 * 1024))
+                .build();
+        var registerResponse = webTestClient.post()
+                .uri("/admin/register")
+                .bodyValue(registerRequest)
+                .exchange()
+                .expectStatus().isOk()
+                .expectBody(AccessTokenResponseDto.class)
+                .returnResult()
+                .getResponseBody();
 
-        assertNotNull(registerResponse.getBody());
-        var headers = getHeaders(registerResponse.getBody().token());
-        headers.setContentType(MediaType.MULTIPART_FORM_DATA);
+        assertNotNull(registerResponse);
+        var token = registerResponse.token();
 
-        var body = new LinkedMultiValueMap<String, Object>();
         var fileSize = 100 * 1024 * 1024;
         var randomFile = randomFile(fileSize);
         var resource = new FileSystemResource(randomFile);
-        body.add("file", resource);
 
-        var requestEntity = new HttpEntity<MultiValueMap<String, Object>>(body, headers);
-        var serverUrl = baseUrl + port + "/put?path=//test/a//";
-        var response = restTemplate.postForEntity(serverUrl, requestEntity, PutFileResponseDto.class);
+        var bodyBuilder = new MultipartBodyBuilder();
+        bodyBuilder.part("file", resource);
 
-        assertNotNull(response.getBody());
-        assertEquals(fileSize, response.getBody().bytes());
+        var response = webTestClient.post()
+                .uri("/put?path=//test/a//")
+                .header("Authorization", "Bearer " + token)
+                .contentType(MediaType.MULTIPART_FORM_DATA)
+                .body(BodyInserters.fromMultipartData(bodyBuilder.build()))
+                .exchange()
+                .expectStatus().isOk()
+                .expectBody(PutFileResponseDto.class)
+                .returnResult()
+                .getResponseBody();
 
-        var getUrl = baseUrl + port + "/get?file=/test/a/" + randomFile.getName();
+        assertNotNull(response);
+        assertEquals(fileSize, response.bytes());
 
-        var file = restTemplate.execute(getUrl, HttpMethod.GET, clientHttpRequest -> clientHttpRequest
-                .getHeaders().set("Authorization", headers.getFirst("Authorization")), clientHttpResponse -> {
-            var ret = File.createTempFile("download", "tmp");
-            StreamUtils.copy(clientHttpResponse.getBody(), new FileOutputStream(ret));
-            return ret;
-        });
+        var downloadedBytes = webTestClient.get()
+                .uri("/get?file=/test/a/" + randomFile.getName())
+                .header("Authorization", "Bearer " + token)
+                .exchange()
+                .expectStatus().isOk()
+                .expectBody(byte[].class)
+                .returnResult()
+                .getResponseBody();
 
-        var mismatch = Files.mismatch(randomFile.toPath(), file.toPath());
-        assertEquals(-1, mismatch);
+        assertNotNull(downloadedBytes);
+        var expectedBytes = Files.readAllBytes(randomFile.toPath());
+        assertArrayEquals(expectedBytes, downloadedBytes);
     }
 
     @Test
     public void Get_range_file() throws IOException {
-        var registerRequest = new HttpEntity<>(new AccessTokenRequestDto("tenant_a", "tenant_a_secret", "realm", "subject", "rw", tomorrow));
-        var registerResponse = restTemplate.postForEntity(baseUrl + port + "/admin/register", registerRequest, AccessTokenResponseDto.class);
+        var registerRequest = new AccessTokenRequestDto("tenant_a", "tenant_a_secret", "realm", "subject", "rw", tomorrow);
+        var webTestClient = WebTestClient
+                .bindToServer()
+                .baseUrl("http://localhost:" + port)
+                .codecs(configurer -> configurer.defaultCodecs().maxInMemorySize(150 * 1024 * 1024))
+                .build();
+        var registerResponse = webTestClient.post()
+                .uri("/admin/register")
+                .bodyValue(registerRequest)
+                .exchange()
+                .expectStatus().isOk()
+                .expectBody(AccessTokenResponseDto.class)
+                .returnResult()
+                .getResponseBody();
 
-        assertNotNull(registerResponse.getBody());
-        var headers = getHeaders(registerResponse.getBody().token());
-        headers.setContentType(MediaType.MULTIPART_FORM_DATA);
+        assertNotNull(registerResponse);
+        var token = registerResponse.token();
 
-        var body = new LinkedMultiValueMap<String, Object>();
         var fileSize = 100 * 1024 * 1024;
         var firstSliceSize = 33 * 1024 * 1024;
         var randomFile = randomFile(fileSize);
         var resource = new FileSystemResource(randomFile);
-        body.add("file", resource);
 
-        var requestEntity = new HttpEntity<MultiValueMap<String, Object>>(body, headers);
-        var serverUrl = baseUrl + port + "/put?path=//test/a//&hash=true";
-        var response = restTemplate.postForEntity(serverUrl, requestEntity, PutFileResponseDto.class);
+        var bodyBuilder = new MultipartBodyBuilder();
+        bodyBuilder.part("file", resource);
 
-        assertNotNull(response.getBody());
-        assertEquals(fileSize, response.getBody().bytes());
+        var response = webTestClient.post()
+                .uri("/put?path=//test/a//&hash=true")
+                .header("Authorization", "Bearer " + token)
+                .contentType(MediaType.MULTIPART_FORM_DATA)
+                .body(BodyInserters.fromMultipartData(bodyBuilder.build()))
+                .exchange()
+                .expectStatus().isOk()
+                .expectBody(PutFileResponseDto.class)
+                .returnResult()
+                .getResponseBody();
 
-        var getUrl = baseUrl + port + "/get?file=/test/a/" + randomFile.getName();
+        assertNotNull(response);
+        assertEquals(fileSize, response.bytes());
 
-        var firstSlice = restTemplate.execute(getUrl, HttpMethod.GET, clientHttpRequest -> {
-            clientHttpRequest.getHeaders().set("Authorization", headers.getFirst("Authorization"));
-            clientHttpRequest.getHeaders().set("Range", String.format("bytes=0-%d", firstSliceSize - 1));
-        }, clientHttpResponse -> {
-            var ret = File.createTempFile("download", "tmp");
-            StreamUtils.copy(clientHttpResponse.getBody(), new FileOutputStream(ret));
-            return ret;
-        });
+        var firstSliceBytes = webTestClient.get()
+                .uri("/get?file=/test/a/" + randomFile.getName())
+                .header("Authorization", "Bearer " + token)
+                .header("Range", String.format("bytes=0-%d", firstSliceSize - 1))
+                .exchange()
+                .expectStatus().isEqualTo(HttpStatus.PARTIAL_CONTENT.value())
+                .expectBody(byte[].class)
+                .returnResult()
+                .getResponseBody();
 
-        var secondSlice = restTemplate.execute(getUrl, HttpMethod.GET, clientHttpRequest -> {
-            clientHttpRequest.getHeaders().set("Authorization", headers.getFirst("Authorization"));
-            clientHttpRequest.getHeaders().set("Range", String.format("bytes=%d-%d", firstSliceSize, fileSize));
-        }, clientHttpResponse -> {
-            var ret = File.createTempFile("download", "tmp");
-            StreamUtils.copy(clientHttpResponse.getBody(), new FileOutputStream(ret));
-            return ret;
-        });
+        var secondSliceBytes = webTestClient.get()
+                .uri("/get?file=/test/a/" + randomFile.getName())
+                .header("Authorization", "Bearer " + token)
+                .header("Range", String.format("bytes=%d-%d", firstSliceSize, fileSize))
+                .exchange()
+                .expectStatus().isEqualTo(HttpStatus.PARTIAL_CONTENT.value())
+                .expectBody(byte[].class)
+                .returnResult()
+                .getResponseBody();
 
-        var secondSliceBytes = Files.readAllBytes(secondSlice.toPath());
+        assertNotNull(firstSliceBytes);
+        assertNotNull(secondSliceBytes);
 
-        Files.write(firstSlice.toPath(), secondSliceBytes, StandardOpenOption.APPEND);
+        var combinedFile = File.createTempFile("combined", "tmp");
+        Files.write(combinedFile.toPath(), firstSliceBytes);
+        Files.write(combinedFile.toPath(), secondSliceBytes, StandardOpenOption.APPEND);
 
-        var mismatch = Files.mismatch(randomFile.toPath(), firstSlice.toPath());
+        var mismatch = Files.mismatch(randomFile.toPath(), combinedFile.toPath());
         assertEquals(-1, mismatch);
     }
 
     @Test
     public void Deny_write_only_get() {
-        var registerRequest = new HttpEntity<>(new AccessTokenRequestDto("tenant_a", "tenant_a_secret", "realm", "subject", "w", tomorrow));
-        var registerResponse = restTemplate.postForEntity(baseUrl + port + "/admin/register", registerRequest, AccessTokenResponseDto.class);
+        var registerRequest = new AccessTokenRequestDto("tenant_a", "tenant_a_secret", "realm", "subject", "w", tomorrow);
+        var webTestClient = WebTestClient.bindToServer().baseUrl("http://localhost:" + port).build();
+        var registerResponse = webTestClient.post()
+                .uri("/admin/register")
+                .bodyValue(registerRequest)
+                .exchange()
+                .expectStatus().isOk()
+                .expectBody(AccessTokenResponseDto.class)
+                .returnResult()
+                .getResponseBody();
 
-        assertNotNull(registerResponse.getBody());
-        var headers = getHeaders(registerResponse.getBody().token());
+        assertNotNull(registerResponse);
+        var token = registerResponse.token();
 
-        var requestEntity = new HttpEntity<Void>(headers);
-
-        var getUrl = baseUrl + port + "/get?file=/test/a/denied";
-
-        var response = restTemplate.exchange(getUrl, HttpMethod.GET, requestEntity, String.class);
-
-        assertEquals(HttpStatus.UNAUTHORIZED, response.getStatusCode());
+        webTestClient.get()
+                .uri("/get?file=/test/a/denied")
+                .header("Authorization", "Bearer " + token)
+                .exchange()
+                .expectStatus().isUnauthorized();
     }
 
     @Test
     public void Allow_list_for_blank_tenant() throws IOException {
         FileUtils.deleteDirectory(depotProperties.getBaseDirectory().resolve("tenant_b").resolve("realm").toFile());
 
-        var registerRequest = new HttpEntity<>(new AccessTokenRequestDto("tenant_b", "tenant_b_secret", "realm", "subject", "r", tomorrow));
-        var registerResponse = restTemplate.postForEntity(baseUrl + port + "/admin/register", registerRequest, AccessTokenResponseDto.class);
+        var registerRequest = new AccessTokenRequestDto("tenant_b", "tenant_b_secret", "realm", "subject", "r", tomorrow);
+        var webTestClient = WebTestClient.bindToServer().baseUrl("http://localhost:" + port).build();
+        var registerResponse = webTestClient.post()
+                .uri("/admin/register")
+                .bodyValue(registerRequest)
+                .exchange()
+                .expectStatus().isOk()
+                .expectBody(AccessTokenResponseDto.class)
+                .returnResult()
+                .getResponseBody();
 
-        assertNotNull(registerResponse.getBody());
-        var headers = getHeaders(registerResponse.getBody().token());
+        assertNotNull(registerResponse);
+        var token = registerResponse.token();
 
-        var requestEntity = new HttpEntity<Void>(headers);
+        var response = webTestClient.get()
+                .uri("/list?path=/")
+                .header("Authorization", "Bearer " + token)
+                .exchange()
+                .expectStatus().isOk()
+                .expectBody(FileDto[].class)
+                .returnResult()
+                .getResponseBody();
 
-        var getUrl = baseUrl + port + "/list?path=/";
-
-        var response = restTemplate.exchange(getUrl, HttpMethod.GET, requestEntity, FileDto[].class);
-
-        assertEquals(HttpStatus.OK, response.getStatusCode());
-        assertNotNull(response.getBody());
-        assertEquals(0, response.getBody().length);
+        assertNotNull(response);
+        assertEquals(0, response.length);
     }
 
     @Test
     public void Deny_write_only_list() {
-        var registerRequest = new HttpEntity<>(new AccessTokenRequestDto("tenant_a", "tenant_a_secret", "realm", "subject", "w", tomorrow));
-        var registerResponse = restTemplate.postForEntity(baseUrl + port + "/admin/register", registerRequest, AccessTokenResponseDto.class);
+        var registerRequest = new AccessTokenRequestDto("tenant_a", "tenant_a_secret", "realm", "subject", "w", tomorrow);
+        var webTestClient = WebTestClient.bindToServer().baseUrl("http://localhost:" + port).build();
+        var registerResponse = webTestClient.post()
+                .uri("/admin/register")
+                .bodyValue(registerRequest)
+                .exchange()
+                .expectStatus().isOk()
+                .expectBody(AccessTokenResponseDto.class)
+                .returnResult()
+                .getResponseBody();
 
-        assertNotNull(registerResponse.getBody());
-        var headers = getHeaders(registerResponse.getBody().token());
+        assertNotNull(registerResponse);
+        var token = registerResponse.token();
 
-        var requestEntity = new HttpEntity<Void>(headers);
-
-        var getUrl = baseUrl + port + "/list?path=/";
-
-        var response = restTemplate.exchange(getUrl, HttpMethod.GET, requestEntity, Void.class);
-
-        assertEquals(HttpStatus.UNAUTHORIZED, response.getStatusCode());
+        webTestClient.get()
+                .uri("/list?path=/")
+                .header("Authorization", "Bearer " + token)
+                .exchange()
+                .expectStatus().isUnauthorized();
     }
 
     @Test
     public void Deny_write_only_delete() {
-        var registerRequest = new HttpEntity<>(new AccessTokenRequestDto("tenant_a", "tenant_a_secret", "realm", "subject", "wr", tomorrow));
-        var registerResponse = restTemplate.postForEntity(baseUrl + port + "/admin/register", registerRequest, AccessTokenResponseDto.class);
+        var registerRequest = new AccessTokenRequestDto("tenant_a", "tenant_a_secret", "realm", "subject", "wr", tomorrow);
+        var webTestClient = WebTestClient.bindToServer().baseUrl("http://localhost:" + port).build();
+        var registerResponse = webTestClient.post()
+                .uri("/admin/register")
+                .bodyValue(registerRequest)
+                .exchange()
+                .expectStatus().isOk()
+                .expectBody(AccessTokenResponseDto.class)
+                .returnResult()
+                .getResponseBody();
 
-        assertNotNull(registerResponse.getBody());
-        var headers = getHeaders(registerResponse.getBody().token());
+        assertNotNull(registerResponse);
+        var token = registerResponse.token();
 
-        var requestEntity = new HttpEntity<Void>(headers);
-
-        var deleteUrl = baseUrl + port + "/delete?path=/no.txt";
-
-        var response = restTemplate.exchange(deleteUrl, HttpMethod.GET, requestEntity, Void.class);
-
-        assertEquals(HttpStatus.UNAUTHORIZED, response.getStatusCode());
+        webTestClient.get()
+                .uri("/delete?path=/no.txt")
+                .header("Authorization", "Bearer " + token)
+                .exchange()
+                .expectStatus().isUnauthorized();
     }
 
     @Test
     public void Delete() throws IOException {
         FileUtils.deleteDirectory(depotProperties.getBaseDirectory().resolve("tenant_a").resolve("realm").toFile());
 
-        var registerRequest = new HttpEntity<>(new AccessTokenRequestDto("tenant_a", "tenant_a_secret", "realm", "subject", "rdw", tomorrow));
-        var registerResponse = restTemplate.postForEntity(baseUrl + port + "/admin/register", registerRequest, AccessTokenResponseDto.class);
+        var registerRequest = new AccessTokenRequestDto("tenant_a", "tenant_a_secret", "realm", "subject", "rdw", tomorrow);
+        var webTestClient = WebTestClient.bindToServer().baseUrl("http://localhost:" + port).build();
+        var registerResponse = webTestClient.post()
+                .uri("/admin/register")
+                .bodyValue(registerRequest)
+                .exchange()
+                .expectStatus().isOk()
+                .expectBody(AccessTokenResponseDto.class)
+                .returnResult()
+                .getResponseBody();
 
-        assertNotNull(registerResponse.getBody());
-        var headers = getHeaders(registerResponse.getBody().token());
-        headers.setContentType(MediaType.MULTIPART_FORM_DATA);
+        assertNotNull(registerResponse);
+        var token = registerResponse.token();
 
-        var body1 = new LinkedMultiValueMap<String, Object>();
         var fileSize1 = 10 * 1024 * 1024;
         var randomFile1 = randomFile(fileSize1);
         var resource1 = new FileSystemResource(randomFile1);
-        body1.add("file", resource1);
 
-        var requestEntity1 = new HttpEntity<MultiValueMap<String, Object>>(body1, headers);
-        var putUrl1 = baseUrl + port + "/put?path=//test/deleteMe//&hash=true";
-        restTemplate.postForEntity(putUrl1, requestEntity1, PutFileResponseDto.class);
+        var bodyBuilder1 = new MultipartBodyBuilder();
+        bodyBuilder1.part("file", resource1);
 
-        var body2 = new LinkedMultiValueMap<String, Object>();
+        webTestClient.post()
+                .uri("/put?path=//test/deleteMe//&hash=true")
+                .header("Authorization", "Bearer " + token)
+                .contentType(MediaType.MULTIPART_FORM_DATA)
+                .body(BodyInserters.fromMultipartData(bodyBuilder1.build()))
+                .exchange()
+                .expectStatus().isOk();
+
         var fileSize2 = 10 * 1024 * 1024;
         var randomFile2 = randomFile(fileSize2);
         var resource2 = new FileSystemResource(randomFile2);
-        body2.add("file", resource2);
 
-        var requestEntity2 = new HttpEntity<MultiValueMap<String, Object>>(body2, headers);
-        var putUrl2 = baseUrl + port + "/put?path=//test/deleteMe//&hash=true";
-        restTemplate.postForEntity(putUrl2, requestEntity2, PutFileResponseDto.class);
+        var bodyBuilder2 = new MultipartBodyBuilder();
+        bodyBuilder2.part("file", resource2);
 
-        headers.setContentType(MediaType.APPLICATION_JSON);
-        var listRequest = new HttpEntity<>(headers);
-        var files = restTemplate.exchange(baseUrl + port + "/list?path=///test//deleteMe", HttpMethod.GET, listRequest, FileDto[].class);
-        assertEquals(2, Arrays.stream(Objects.requireNonNull(files.getBody())).count());
+        webTestClient.post()
+                .uri("/put?path=//test/deleteMe//&hash=true")
+                .header("Authorization", "Bearer " + token)
+                .contentType(MediaType.MULTIPART_FORM_DATA)
+                .body(BodyInserters.fromMultipartData(bodyBuilder2.build()))
+                .exchange()
+                .expectStatus().isOk();
 
-        var deleteRequest1 = new HttpEntity<>(headers);
-        var deleteResponse1 = restTemplate.exchange(baseUrl + port + "/delete?path=//test//deleteMe///" + randomFile1.getName(), HttpMethod.GET, deleteRequest1, Void.class);
-        assertEquals(HttpStatus.OK, deleteResponse1.getStatusCode());
-        files = restTemplate.exchange(baseUrl + port + "/list?path=///test//deleteMe", HttpMethod.GET, listRequest, FileDto[].class);
-        assertEquals(1, Arrays.stream(Objects.requireNonNull(files.getBody())).count());
+        var files = webTestClient.get()
+                .uri("/list?path=///test//deleteMe")
+                .header("Authorization", "Bearer " + token)
+                .exchange()
+                .expectStatus().isOk()
+                .expectBody(FileDto[].class)
+                .returnResult()
+                .getResponseBody();
+        assertEquals(2, Arrays.stream(Objects.requireNonNull(files)).count());
 
-        var deleteRequest2 = new HttpEntity<>(headers);
-        var deleteResponse2 = restTemplate.exchange(baseUrl + port + "/delete?path=", HttpMethod.GET, deleteRequest2, Void.class);
-        assertEquals(HttpStatus.OK, deleteResponse2.getStatusCode());
-        files = restTemplate.exchange(baseUrl + port + "/list?path=///", HttpMethod.GET, listRequest, FileDto[].class);
-        assertEquals(0, Arrays.stream(Objects.requireNonNull(files.getBody())).count());
+        webTestClient.get()
+                .uri("/delete?path=//test//deleteMe///" + randomFile1.getName())
+                .header("Authorization", "Bearer " + token)
+                .exchange()
+                .expectStatus().isOk();
 
-        var deleteResponse3 = restTemplate.exchange(baseUrl + port + "/delete?path=", HttpMethod.GET, deleteRequest2, Void.class);
-        assertEquals(HttpStatus.OK, deleteResponse3.getStatusCode());
+        files = webTestClient.get()
+                .uri("/list?path=///test//deleteMe")
+                .header("Authorization", "Bearer " + token)
+                .exchange()
+                .expectStatus().isOk()
+                .expectBody(FileDto[].class)
+                .returnResult()
+                .getResponseBody();
+        assertEquals(1, Arrays.stream(Objects.requireNonNull(files)).count());
 
-        var deleteResponse4 = restTemplate.exchange(baseUrl + port + "/delete?path=unknown", HttpMethod.GET, deleteRequest2, Void.class);
-        assertEquals(HttpStatus.OK, deleteResponse4.getStatusCode());
+        webTestClient.get()
+                .uri("/delete?path=")
+                .header("Authorization", "Bearer " + token)
+                .exchange()
+                .expectStatus().isOk();
 
-        var deleteResponse5 = restTemplate.exchange(baseUrl + port + "/delete?path=../../inéVäli$", HttpMethod.GET, deleteRequest2, Void.class);
-        assertEquals(HttpStatus.BAD_REQUEST, deleteResponse5.getStatusCode());
-    }
+        files = webTestClient.get()
+                .uri("/list?path=///")
+                .header("Authorization", "Bearer " + token)
+                .exchange()
+                .expectStatus().isOk()
+                .expectBody(FileDto[].class)
+                .returnResult()
+                .getResponseBody();
+        assertEquals(0, Arrays.stream(Objects.requireNonNull(files)).count());
 
-    private HttpHeaders getHeaders(String token) {
-        var headers = new HttpHeaders();
-        var bearer = "Bearer " + token;
-        headers.set("Authorization", bearer);
+        webTestClient.get()
+                .uri("/delete?path=")
+                .header("Authorization", "Bearer " + token)
+                .exchange()
+                .expectStatus().isOk();
 
-        return headers;
+        webTestClient.get()
+                .uri("/delete?path=unknown")
+                .header("Authorization", "Bearer " + token)
+                .exchange()
+                .expectStatus().isOk();
+
+        webTestClient.get()
+                .uri("/delete?path=../../inéVäli$")
+                .header("Authorization", "Bearer " + token)
+                .exchange()
+                .expectStatus().isBadRequest();
     }
 
     private File randomFile(int sizeInBytes) throws IOException {

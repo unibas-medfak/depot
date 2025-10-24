@@ -9,7 +9,7 @@ import io.swagger.v3.oas.annotations.security.SecurityScheme;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
-import org.springframework.boot.security.autoconfigure.servlet.UserDetailsServiceAutoConfiguration;
+import org.springframework.boot.security.autoconfigure.UserDetailsServiceAutoConfiguration;
 
 import java.util.Locale;
 
@@ -19,7 +19,7 @@ import java.util.Locale;
 @SecurityScheme(name = "depotapi", scheme = "bearer", type = SecuritySchemeType.HTTP, in = SecuritySchemeIn.HEADER)
 public class DepotApplication {
 
-    public static void main(String[] args) {
+    static void main(String[] args) {
         Locale.setDefault(Locale.ENGLISH);
         SpringApplication.run(DepotApplication.class, args);
     }
