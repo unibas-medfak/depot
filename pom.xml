@@ -5,11 +5,12 @@
 		<groupId>org.springframework.boot</groupId>
 		<artifactId>spring-boot-starter-parent</artifactId>
 		<version>4.0.0-SNAPSHOT</version>
+		<version>3.5.7</version>
 		<relativePath />
 	</parent>
 	<groupId>ch.unibas.medizin</groupId>
 	<artifactId>depot</artifactId>
-	<version>1.1.1-SNAPSHOT</version>
+	<version>1.2.1-SNAPSHOT</version>
 	<name>depot</name>
 	<description>Simple and secure file storage service</description>
 
@@ -19,7 +20,7 @@
 	</scm>
 
 	<properties>
-		<java.version>24</java.version>
+		<java.version>25</java.version>
 		<json-path.version>2.9.0</json-path.version>
 	</properties>
 
@@ -69,7 +70,7 @@
 		<dependency>
 			<groupId>org.apache.commons</groupId>
 			<artifactId>commons-lang3</artifactId>
-			<version>3.18.0</version>
+			<version>3.19.0</version>
 		</dependency>
 		<dependency>
 			<groupId>org.jspecify</groupId>
@@ -100,10 +101,10 @@
 			<plugin>
 				<groupId>org.apache.maven.plugins</groupId>
 				<artifactId>maven-compiler-plugin</artifactId>
-				<version>3.14.0</version>
+				<version>3.14.1</version>
 				<configuration>
-					<source>24</source>
-					<target>24</target>
+					<source>25</source>
+					<target>25</target>
 					<encoding>UTF-8</encoding>
 					<compilerArgs>
 						<arg>-XDcompilePolicy=simple</arg>
@@ -114,12 +115,12 @@
 						<path>
 							<groupId>com.google.errorprone</groupId>
 							<artifactId>error_prone_core</artifactId>
-							<version>2.41.0</version>
+							<version>2.43.0</version>
 						</path>
 						<path>
 							<groupId>com.uber.nullaway</groupId>
 							<artifactId>nullaway</artifactId>
-							<version>0.12.9</version>
+							<version>0.12.10</version>
 						</path>
 					</annotationProcessorPaths>
 				</configuration>
@@ -134,7 +135,7 @@
 			<plugin>
 				<groupId>org.jacoco</groupId>
 				<artifactId>jacoco-maven-plugin</artifactId>
-				<version>0.8.13</version>
+				<version>0.8.14</version>
 				<executions>
 					<execution>
 						<goals>
