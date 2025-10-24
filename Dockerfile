@@ -1,4 +1,4 @@
-FROM eclipse-temurin:25-jre-noble AS builder
+FROM eclipse-temurin:25-jdk-noble AS builder
 WORKDIR /opt/app
 COPY .mvn/ .mvn
 COPY mvnw pom.xml ./
