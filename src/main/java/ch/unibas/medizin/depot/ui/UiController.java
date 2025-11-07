@@ -1,4 +1,4 @@
-package ch.unibas.medizin.depot.api;
+package ch.unibas.medizin.depot.ui;
 
 import ch.unibas.medizin.depot.config.VersionHolder;
 import org.springframework.core.io.ClassPathResource;

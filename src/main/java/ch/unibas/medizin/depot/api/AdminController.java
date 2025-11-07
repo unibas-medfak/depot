@@ -7,6 +7,7 @@ import ch.unibas.medizin.depot.exception.InvalidRequestException;
 import ch.unibas.medizin.depot.service.AccessTokenService;
 import ch.unibas.medizin.depot.service.AdminService;
 import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Validator;
 import org.jspecify.annotations.NullMarked;
 import org.springframework.http.MediaType;
@@ -21,6 +22,7 @@ import java.util.List;
 @NullMarked
 @RestController
 @RequestMapping("/admin")
+@Tag(name = "Admin", description = "Admin API")
 public class AdminController {
 
     private final AccessTokenService accessTokenService;
