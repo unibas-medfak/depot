@@ -153,6 +153,9 @@ public record DepotService(
 
             final var bytes = Files.copy(file.getInputStream(), tmpFile, options);
 
+            // Rename old file if it exists and has different content
+            renameOldFileIfDifferent(fullPathAndFile, tmpFile);
+
             Files.move(tmpFile, fullPathAndFile, StandardCopyOption.ATOMIC_MOVE);
 
             return new PutFileResponseDto(bytes, hash ? DigestUtils.sha256Hex(file.getInputStream()) : "-");
@@ -160,6 +163,61 @@ public record DepotService(
             log.error("Could not store the file", e);
             throw new RuntimeException("Could not store the file. " + e.getMessage());
         }
+    }
+
+    private void renameOldFileIfDifferent(final Path targetPath, final Path newFilePath) throws IOException {
+        // Synchronize on the canonical path to prevent race conditions with concurrent writes to the same file
+        synchronized (targetPath.toAbsolutePath().toString().intern()) {
+            if (!Files.exists(targetPath)) {
+                return;
+            }
+
+            // Check if the existing file has different content than the new file
+            if (filesHaveDifferentContent(targetPath, newFilePath)) {
+                final var renamedPath = getNextAvailablePathWithCount(targetPath);
+                log.info("Renaming existing file {} to {}", targetPath, renamedPath);
+                Files.move(targetPath, renamedPath, StandardCopyOption.ATOMIC_MOVE);
+            }
+        }
+    }
+
+    private boolean filesHaveDifferentContent(final Path file1, final Path file2) throws IOException {
+        // Compare file sizes first for quick check
+        if (Files.size(file1) != Files.size(file2)) {
+            return true;
+        }
+
+        // Compare content byte by byte
+        return !Arrays.equals(Files.readAllBytes(file1), Files.readAllBytes(file2));
+    }
+
+    private Path getNextAvailablePathWithCount(final Path originalPath) {
+        final var parent = originalPath.getParent();
+        final var fileName = originalPath.getFileName().toString();
+
+        // Split filename into name and extension
+        final var lastDotIndex = fileName.lastIndexOf('.');
+        final String nameWithoutExtension;
+        final String extension;
+
+        if (lastDotIndex > 0 && lastDotIndex < fileName.length() - 1) {
+            nameWithoutExtension = fileName.substring(0, lastDotIndex);
+            extension = fileName.substring(lastDotIndex);
+        } else {
+            nameWithoutExtension = fileName;
+            extension = "";
+        }
+
+        // Find next available count
+        int count = 1;
+        Path newPath;
+        do {
+            final var newFileName = nameWithoutExtension + "_" + count + extension;
+            newPath = parent.resolve(newFileName);
+            count++;
+        } while (Files.exists(newPath));
+
+        return newPath;
     }
 
     public void delete(final String path) {
