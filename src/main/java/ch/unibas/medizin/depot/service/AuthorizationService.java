@@ -1,7 +1,6 @@
 package ch.unibas.medizin.depot.service;
 
 import ch.unibas.medizin.depot.config.DepotProperties;
-import jakarta.annotation.Nonnull;
 import org.jspecify.annotations.NullMarked;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -19,7 +18,7 @@ public record AuthorizationService(
 
     private static final Logger log = LoggerFactory.getLogger(AuthorizationService.class);
 
-    public void throwIfAdminPasswordMismatches(final @Nonnull String givenTenant, final @Nonnull String givenAdminPassword) {
+    public void throwIfAdminPasswordMismatches(final String givenTenant, final String givenAdminPassword) {
 
         var tenant = depotProperties.getTenants().get(givenTenant);
 

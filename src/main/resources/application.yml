@@ -22,3 +22,5 @@ spring:
 server:
   forward-headers-strategy: framework
 
+springdoc:
+  packagesToScan: ch.unibas.medizin.depot.api

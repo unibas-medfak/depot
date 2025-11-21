@@ -8,6 +8,8 @@ import ch.unibas.medizin.depot.util.DepotUtil;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.security.SecurityRequirement;
+import io.swagger.v3.oas.annotations.tags.Tag;
+import org.jspecify.annotations.NullMarked;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.core.io.Resource;
@@ -23,8 +25,10 @@ import org.springframework.web.multipart.MultipartFile;
 
 import java.util.List;
 
+@NullMarked
 @RestController
 @SecurityRequirement(name = "depotapi")
+@Tag(name = "Storage", description = "Storage API")
 public class ApiController {
 
     private static final Logger log = LoggerFactory.getLogger(ApiController.class);
@@ -49,7 +53,7 @@ public class ApiController {
         return ResponseEntity.ok(depotService.list(path));
     }
 
-    @GetMapping("/get")
+    @GetMapping(value = "/get", produces = MediaType.APPLICATION_OCTET_STREAM_VALUE)
     @PreAuthorize("hasRole('READ')")
     @Operation(summary = "Retrieve a file")
     public Resource get(@Parameter(description = "Filename and Path to be retrieved", example = "pictures/cats/cat.png") @RequestParam("file") final String file) {
