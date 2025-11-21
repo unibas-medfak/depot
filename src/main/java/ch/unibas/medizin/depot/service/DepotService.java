@@ -3,6 +3,7 @@ package ch.unibas.medizin.depot.service;
 import ch.unibas.medizin.depot.config.DepotProperties;
 import ch.unibas.medizin.depot.dto.FileDto;
 import ch.unibas.medizin.depot.dto.PutFileResponseDto;
+import ch.unibas.medizin.depot.exception.AuthenticationException;
 import ch.unibas.medizin.depot.exception.FileAlreadyExistsAsFolderException;
 import ch.unibas.medizin.depot.exception.FileNotFoundException;
 import ch.unibas.medizin.depot.exception.FolderAlreadyExistsAsFileException;
@@ -184,27 +185,27 @@ public record DepotService(
     private TokenData getTokenData() {
         final var authentication = SecurityContextHolder.getContext().getAuthentication();
         if (authentication == null) {
-            throw new IllegalStateException("Not authenticated");
+            throw new AuthenticationException("Not authenticated");
         }
 
         final var tenantRealmAndSubject = Arrays.asList(authentication.getName().split(JWTAuthorizationFilter.TOKEN_DATA_DELIMITER));
         if (tenantRealmAndSubject.size() != 3) {
-            throw new IllegalStateException("Illegal security context");
+            throw new AuthenticationException("Illegal security context");
         }
 
         final var tenant = tenantRealmAndSubject.get(0);
         if (!StringUtils.hasText(tenant)) {
-            throw new IllegalStateException("Empty tenant");
+            throw new AuthenticationException("Empty tenant");
         }
 
         final var realm = tenantRealmAndSubject.get(1);
         if (!StringUtils.hasText(realm)) {
-            throw new IllegalStateException("Empty realm");
+            throw new AuthenticationException("Empty realm");
         }
 
         final var subject = tenantRealmAndSubject.get(2);
         if (!StringUtils.hasText(subject)) {
-            throw new IllegalStateException("Empty subject");
+            throw new AuthenticationException("Empty subject");
         }
 
         final var rootAndRealmPath = depotProperties.getBaseDirectory().resolve(tenant).resolve(realm);

@@ -58,5 +58,12 @@ public record RestExceptionHandler() {
         return problemDetails;
     }
 
+    @ExceptionHandler(AuthenticationException.class)
+    public ProblemDetail handleAuthenticationException(final AuthenticationException authenticationException) {
+        var problemDetails = ProblemDetail.forStatusAndDetail(HttpStatus.UNAUTHORIZED, authenticationException.getLocalizedMessage());
+        problemDetails.setTitle("Authentication failed");
+        return problemDetails;
+    }
+
 }
 
