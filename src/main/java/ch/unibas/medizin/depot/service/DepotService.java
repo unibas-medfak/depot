@@ -183,17 +183,29 @@ public record DepotService(
 
     private TokenData getTokenData() {
         final var authentication = SecurityContextHolder.getContext().getAuthentication();
+        if (authentication == null) {
+            throw new IllegalStateException("Not authenticated");
+        }
+
         final var tenantRealmAndSubject = Arrays.asList(authentication.getName().split(JWTAuthorizationFilter.TOKEN_DATA_DELIMITER));
-        assert tenantRealmAndSubject.size() == 3;
+        if (tenantRealmAndSubject.size() != 3) {
+            throw new IllegalStateException("Illegal security context");
+        }
 
         final var tenant = tenantRealmAndSubject.get(0);
-        assert StringUtils.hasText(tenant);
+        if (!StringUtils.hasText(tenant)) {
+            throw new IllegalStateException("Empty tenant");
+        }
 
         final var realm = tenantRealmAndSubject.get(1);
-        assert StringUtils.hasText(realm);
+        if (!StringUtils.hasText(realm)) {
+            throw new IllegalStateException("Empty realm");
+        }
 
         final var subject = tenantRealmAndSubject.get(2);
-        assert StringUtils.hasText(subject);
+        if (!StringUtils.hasText(subject)) {
+            throw new IllegalStateException("Empty subject");
+        }
 
         final var rootAndRealmPath = depotProperties.getBaseDirectory().resolve(tenant).resolve(realm);
         return new TokenData(tenant, rootAndRealmPath, subject);
