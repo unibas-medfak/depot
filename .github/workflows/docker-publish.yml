@@ -46,7 +46,7 @@ jobs:
           cosign-release: 'v2.2.4'
 
       - name: Set up QEMU
-        uses: docker/setup-qemu-action@v3.6.0
+        uses: docker/setup-qemu-action@v3.7.0
 
       # Set up BuildKit Docker container builder to be able to build
       # multi-platform images and export cache
@@ -68,7 +68,7 @@ jobs:
       # https://github.com/docker/metadata-action
       - name: Extract Docker metadata
         id: meta
-        uses: docker/metadata-action@v5.8.0
+        uses: docker/metadata-action@v5.9.0
         with:
           images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
 
