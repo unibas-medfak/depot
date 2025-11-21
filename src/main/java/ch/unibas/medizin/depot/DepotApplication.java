@@ -19,7 +19,7 @@ import java.util.Locale;
 @SecurityScheme(name = "depotapi", scheme = "bearer", type = SecuritySchemeType.HTTP, in = SecuritySchemeIn.HEADER)
 public class DepotApplication {
 
-    static void main(String[] args) {
+    public static void main(String[] args) {
         Locale.setDefault(Locale.ENGLISH);
         SpringApplication.run(DepotApplication.class, args);
     }
