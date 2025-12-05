@@ -1,6 +1,8 @@
 # depot
 Simple and secure file storage service
 
+Depot is a multi-tenant file storage service built with Java 25 and Spring Boot 4.0.0 that provides secure, role-based file management through a RESTful API. The application features JWT authentication with realm-based access control, supporting READ, WRITE, and DELETE permissions for organized file operations. Built with Spring Security for authentication, BCrypt password hashing for secure credential storage, and comprehensive audit logging, Depot ensures secure multi-tenant isolation with tenant/realm directory structures. The service includes OpenAPI/Swagger documentation for easy API exploration, QR code generation for simplified realm access provisioning, and can be deployed as a standalone JAR or via Docker with optional Docker Compose orchestration.
+
 ## run local
 
 ```console
