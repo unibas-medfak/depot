@@ -14,9 +14,9 @@ import org.springframework.validation.annotation.Validated;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.security.SecureRandom;
 import java.util.Base64;
 import java.util.Map;
-import java.util.Random;
 import java.util.UUID;
 
 @Validated
@@ -95,7 +95,7 @@ public class DepotProperties {
         } catch (IOException e) {
             log.info("No JWT secret found in {}", jwtSecretFilePath);
 
-            var random = new Random();
+            var random = new SecureRandom();
             var randomJwtSecret = new byte[256];
             random.nextBytes(randomJwtSecret);
             var randomJwtSecretString = Base64.getEncoder().encodeToString(randomJwtSecret);
