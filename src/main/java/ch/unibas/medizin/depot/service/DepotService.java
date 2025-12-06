@@ -47,10 +47,41 @@ public record DepotService(
         }
     }
 
+    /**
+     * Validates that no component in the path is a symbolic link to prevent symlink attacks.
+     * This check is performed recursively on all path components from the target path up to the base path.
+     *
+     * @param path the path to validate
+     * @param basePath the base path that should contain the target path
+     * @throws SecurityException if a symbolic link is detected in the path
+     * @throws IOException if an I/O error occurs while checking the path
+     */
+    private void validateNoSymlinks(Path path, Path basePath) throws IOException {
+        if (depotProperties.isAllowSymbolicLinks()) {
+            return;
+        }
+
+        Path current = path;
+        while (current != null && current.startsWith(basePath)) {
+            if (Files.exists(current) && Files.isSymbolicLink(current)) {
+                log.warn("Symbolic link detected at: {}", current);
+                throw new SecurityException("Symbolic links are not allowed");
+            }
+            current = current.getParent();
+        }
+    }
+
     public List<FileDto> list(final String path) {
         final var tokenData = getTokenData();
         final var normalizedPath = DepotUtil.normalizePath(path);
         final var fullPath = tokenData.basePath().resolve(normalizedPath);
+
+        try {
+            validateNoSymlinks(fullPath, tokenData.basePath());
+        } catch (IOException e) {
+            log.error("Error validating symbolic links for path {}", fullPath, e);
+            throw new RuntimeException("Could not validate path security");
+        }
 
         logService.log(tokenData.tenant, LogService.EventType.LIST, tokenData.subject(), fullPath.toString());
         log.info("{} list {}", tokenData.subject(), fullPath);
@@ -96,6 +127,13 @@ public record DepotService(
             throw new FileNotFoundException(file); // or use a dedicated exception
         }
 
+        try {
+            validateNoSymlinks(fullPath, basePath);
+        } catch (IOException e) {
+            log.error("Error validating symbolic links for path {}", fullPath, e);
+            throw new RuntimeException("Could not validate path security");
+        }
+
         logService.log(tokenData.tenant, LogService.EventType.GET, tokenData.subject(), fullPath.toString());
         log.info("{} get {}", tokenData.subject(), fullPath);
 
@@ -123,6 +161,14 @@ public record DepotService(
         if (!fullPathAndFile.startsWith(fullPath + File.separator)) {
             log.error("Attempt to store file outside permitted path: {}", fullPathAndFile);
             throw new IllegalArgumentException("Invalid file path");
+        }
+
+        try {
+            validateNoSymlinks(fullPath, tokenData.basePath());
+            validateNoSymlinks(fullPathAndFile, tokenData.basePath());
+        } catch (IOException e) {
+            log.error("Error validating symbolic links for path {}", fullPathAndFile, e);
+            throw new RuntimeException("Could not validate path security");
         }
 
         logService.log(tokenData.tenant, LogService.EventType.PUT, tokenData.subject(), fullPathAndFile.toString());
@@ -166,6 +212,13 @@ public record DepotService(
         final var normalizedFile = DepotUtil.normalizePath(path);
         final var tokenData = getTokenData();
         final var fullPath = tokenData.basePath().resolve(normalizedFile);
+
+        try {
+            validateNoSymlinks(fullPath, tokenData.basePath());
+        } catch (IOException e) {
+            log.error("Error validating symbolic links for path {}", fullPath, e);
+            throw new RuntimeException("Could not validate path security");
+        }
 
         try {
             FileSystemUtils.deleteRecursively(fullPath);

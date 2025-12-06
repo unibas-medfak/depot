@@ -42,10 +42,12 @@ public class DepotProperties {
     @NotEmpty
     private final Map<String, Tenant> tenants;
 
+    private final boolean allowSymbolicLinks;
+
     public record Tenant(String password) {
     }
 
-    public DepotProperties(Path baseDirectory, String host, String timeZone, String jwtSecret, Map<String, Tenant> tenants) {
+    public DepotProperties(Path baseDirectory, String host, String timeZone, String jwtSecret, Map<String, Tenant> tenants, Boolean allowSymbolicLinks) {
         if ("Mac OS X".equals(SystemUtils.OS_NAME)) {
             this.baseDirectory = Path.of("/tmp/depot");
         } else {
@@ -56,6 +58,7 @@ public class DepotProperties {
         this.timeZone = timeZone;
         this.jwtSecret = getJwtSecret(this.baseDirectory, jwtSecret);
         this.tenants = getTenants(tenants);
+        this.allowSymbolicLinks = allowSymbolicLinks != null ? allowSymbolicLinks : false;
     }
 
     public String getHost() {
@@ -76,6 +79,10 @@ public class DepotProperties {
 
     public String getJwtSecret() {
         return jwtSecret;
+    }
+
+    public boolean isAllowSymbolicLinks() {
+        return allowSymbolicLinks;
     }
 
     private String getJwtSecret(Path baseDirectory, String jwtSecretFromProperties) {
