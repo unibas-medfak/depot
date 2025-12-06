@@ -177,8 +177,8 @@ public record DepotService(
         }
 
         try {
-            validateNoSymlinks(fullPath, tokenData.basePath());
-            validateNoSymlinks(fullPathAndFile, tokenData.basePath());
+            validateNoSymlinks(fullPath, normalizedBasePath);
+            validateNoSymlinks(fullPathAndFile, normalizedBasePath);
         } catch (SecurityException e) {
             throw e; // Re-throw SecurityException as-is
         } catch (IOException e) {
