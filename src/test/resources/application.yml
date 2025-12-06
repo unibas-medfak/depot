@@ -2,6 +2,7 @@ depot:
   base-directory: /tmp/depot
   host: https://depot.example.com
   time-zone: UTC
+  allow-symbolic-links: false
   jwt-secret: the_secret_key_length_must_be_a_minimum_of_256_bits
   tenants:
     tenant_a:
