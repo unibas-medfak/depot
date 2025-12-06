@@ -74,10 +74,17 @@ public record DepotService(
     public List<FileDto> list(final String path) {
         final var tokenData = getTokenData();
         final var normalizedPath = DepotUtil.normalizePath(path);
-        final var fullPath = tokenData.basePath().resolve(normalizedPath);
+        final var fullPath = tokenData.basePath().resolve(normalizedPath).normalize().toAbsolutePath();
+        final var basePath = tokenData.basePath().normalize().toAbsolutePath();
+
+        // Ensure fullPath is still contained in basePath
+        if (!fullPath.startsWith(basePath)) {
+            log.info("Requested path {} is outside of base directory {}", fullPath, basePath);
+            throw new PathNotFoundException(path);
+        }
 
         try {
-            validateNoSymlinks(fullPath, tokenData.basePath());
+            validateNoSymlinks(fullPath, basePath);
         } catch (SecurityException e) {
             throw e; // Re-throw SecurityException as-is
         } catch (IOException e) {
@@ -162,7 +169,9 @@ public record DepotService(
         final var fullPathAndFile = fullPath.resolve(Objects.requireNonNull(file.getOriginalFilename())).normalize().toAbsolutePath();
 
         // Ensure the resolved file stays within the tenant/base path
-        if (!fullPathAndFile.startsWith(fullPath + File.separator)) {
+        // Use normalize() and startsWith() for reliable path validation
+        final var normalizedBasePath = tokenData.basePath().normalize().toAbsolutePath();
+        if (!fullPathAndFile.startsWith(normalizedBasePath)) {
             log.error("Attempt to store file outside permitted path: {}", fullPathAndFile);
             throw new IllegalArgumentException("Invalid file path");
         }
@@ -217,10 +226,17 @@ public record DepotService(
     public void delete(final String path) {
         final var normalizedFile = DepotUtil.normalizePath(path);
         final var tokenData = getTokenData();
-        final var fullPath = tokenData.basePath().resolve(normalizedFile);
+        final var fullPath = tokenData.basePath().resolve(normalizedFile).normalize().toAbsolutePath();
+        final var basePath = tokenData.basePath().normalize().toAbsolutePath();
+
+        // Ensure fullPath is still contained in basePath
+        if (!fullPath.startsWith(basePath)) {
+            log.info("Requested path {} is outside of base directory {}", fullPath, basePath);
+            throw new PathNotFoundException(path);
+        }
 
         try {
-            validateNoSymlinks(fullPath, tokenData.basePath());
+            validateNoSymlinks(fullPath, basePath);
         } catch (SecurityException e) {
             throw e; // Re-throw SecurityException as-is
         } catch (IOException e) {
