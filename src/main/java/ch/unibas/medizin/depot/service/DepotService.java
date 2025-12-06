@@ -63,7 +63,7 @@ public record DepotService(
 
         Path current = path;
         while (current != null && current.startsWith(basePath)) {
-            if (Files.exists(current) && Files.isSymbolicLink(current)) {
+            if (Files.isSymbolicLink(current)) {
                 log.warn("Symbolic link detected at: {}", current);
                 throw new SecurityException("Symbolic links are not allowed");
             }
@@ -78,9 +78,11 @@ public record DepotService(
 
         try {
             validateNoSymlinks(fullPath, tokenData.basePath());
+        } catch (SecurityException e) {
+            throw e; // Re-throw SecurityException as-is
         } catch (IOException e) {
             log.error("Error validating symbolic links for path {}", fullPath, e);
-            throw new RuntimeException("Could not validate path security");
+            throw new SecurityException("Could not validate path security", e);
         }
 
         logService.log(tokenData.tenant, LogService.EventType.LIST, tokenData.subject(), fullPath.toString());
@@ -129,9 +131,11 @@ public record DepotService(
 
         try {
             validateNoSymlinks(fullPath, basePath);
+        } catch (SecurityException e) {
+            throw e; // Re-throw SecurityException as-is
         } catch (IOException e) {
             log.error("Error validating symbolic links for path {}", fullPath, e);
-            throw new RuntimeException("Could not validate path security");
+            throw new SecurityException("Could not validate path security", e);
         }
 
         logService.log(tokenData.tenant, LogService.EventType.GET, tokenData.subject(), fullPath.toString());
@@ -166,9 +170,11 @@ public record DepotService(
         try {
             validateNoSymlinks(fullPath, tokenData.basePath());
             validateNoSymlinks(fullPathAndFile, tokenData.basePath());
+        } catch (SecurityException e) {
+            throw e; // Re-throw SecurityException as-is
         } catch (IOException e) {
             log.error("Error validating symbolic links for path {}", fullPathAndFile, e);
-            throw new RuntimeException("Could not validate path security");
+            throw new SecurityException("Could not validate path security", e);
         }
 
         logService.log(tokenData.tenant, LogService.EventType.PUT, tokenData.subject(), fullPathAndFile.toString());
@@ -215,9 +221,11 @@ public record DepotService(
 
         try {
             validateNoSymlinks(fullPath, tokenData.basePath());
+        } catch (SecurityException e) {
+            throw e; // Re-throw SecurityException as-is
         } catch (IOException e) {
             log.error("Error validating symbolic links for path {}", fullPath, e);
-            throw new RuntimeException("Could not validate path security");
+            throw new SecurityException("Could not validate path security", e);
         }
 
         try {

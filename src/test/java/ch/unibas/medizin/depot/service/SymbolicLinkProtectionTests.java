@@ -25,6 +25,8 @@ import static org.junit.jupiter.api.Assertions.*;
 @SpringBootTest
 public class SymbolicLinkProtectionTests {
 
+    private static final String TEST_USERNAME = "tenant" + Character.LINE_SEPARATOR + "realm" + Character.LINE_SEPARATOR + "subject";
+
     @Autowired
     private DepotService depotService;
 
@@ -79,7 +81,7 @@ public class SymbolicLinkProtectionTests {
     }
 
     @Test
-    @WithMockUser(username = "tenant" + Character.LINE_SEPARATOR + "realm" + Character.LINE_SEPARATOR + "subject")
+    @WithMockUser(username = TEST_USERNAME)
     public void testGetFile_WithoutSymlink_Success() {
         // Normal file access should work
         assertDoesNotThrow(() -> {
@@ -90,7 +92,7 @@ public class SymbolicLinkProtectionTests {
     }
 
     @Test
-    @WithMockUser(username = "tenant" + Character.LINE_SEPARATOR + "realm" + Character.LINE_SEPARATOR + "subject")
+    @WithMockUser(username = TEST_USERNAME)
     public void testGetFile_WithSymlinkInPath_ThrowsSecurityException() throws IOException {
         // Skip test if symbolic links are allowed (configuration dependent)
         if (depotProperties.isAllowSymbolicLinks()) {
@@ -117,7 +119,7 @@ public class SymbolicLinkProtectionTests {
     }
 
     @Test
-    @WithMockUser(username = "tenant" + Character.LINE_SEPARATOR + "realm" + Character.LINE_SEPARATOR + "subject")
+    @WithMockUser(username = TEST_USERNAME)
     public void testListDirectory_WithSymlink_ThrowsSecurityException() throws IOException {
         // Skip test if symbolic links are allowed
         if (depotProperties.isAllowSymbolicLinks()) {
@@ -141,7 +143,7 @@ public class SymbolicLinkProtectionTests {
     }
 
     @Test
-    @WithMockUser(username = "tenant" + Character.LINE_SEPARATOR + "realm" + Character.LINE_SEPARATOR + "subject")
+    @WithMockUser(username = TEST_USERNAME)
     public void testPutFile_ToSymlinkedDirectory_ThrowsSecurityException() throws IOException {
         // Skip test if symbolic links are allowed
         if (depotProperties.isAllowSymbolicLinks()) {
@@ -172,7 +174,7 @@ public class SymbolicLinkProtectionTests {
     }
 
     @Test
-    @WithMockUser(username = "tenant" + Character.LINE_SEPARATOR + "realm" + Character.LINE_SEPARATOR + "subject")
+    @WithMockUser(username = TEST_USERNAME)
     public void testDeleteFile_ThroughSymlink_ThrowsSecurityException() throws IOException {
         // Skip test if symbolic links are allowed
         if (depotProperties.isAllowSymbolicLinks()) {
@@ -200,7 +202,7 @@ public class SymbolicLinkProtectionTests {
     }
 
     @Test
-    @WithMockUser(username = "tenant" + Character.LINE_SEPARATOR + "realm" + Character.LINE_SEPARATOR + "subject")
+    @WithMockUser(username = TEST_USERNAME)
     public void testListDirectory_WithoutSymlink_Success() {
         // Normal directory listing should work
         assertDoesNotThrow(() -> {
@@ -210,7 +212,7 @@ public class SymbolicLinkProtectionTests {
     }
 
     @Test
-    @WithMockUser(username = "tenant" + Character.LINE_SEPARATOR + "realm" + Character.LINE_SEPARATOR + "subject")
+    @WithMockUser(username = TEST_USERNAME)
     public void testPutFile_NormalPath_Success() {
         // Normal file upload should work
         MockMultipartFile mockFile = new MockMultipartFile(
@@ -237,7 +239,7 @@ public class SymbolicLinkProtectionTests {
     }
 
     @Test
-    @WithMockUser(username = "tenant" + Character.LINE_SEPARATOR + "realm" + Character.LINE_SEPARATOR + "subject")
+    @WithMockUser(username = TEST_USERNAME)
     public void testSymlinkAtRealmLevel_ThrowsSecurityException() throws IOException {
         // Skip test if symbolic links are allowed
         if (depotProperties.isAllowSymbolicLinks()) {
