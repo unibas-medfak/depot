@@ -12,8 +12,7 @@ spring:
       enabled: true
   mvc:
     problemdetails:
-      enabled:
-        true
+      enabled: true
   servlet:
     multipart:
       max-request-size: 500MB

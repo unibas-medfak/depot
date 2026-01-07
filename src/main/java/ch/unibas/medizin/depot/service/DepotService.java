@@ -147,18 +147,32 @@ public record DepotService(
             throw new RuntimeException("Could not initialize folder for upload.");
         }
 
+        Path tmpFile = null;
         try {
-            final var tmpFile = Files.createTempFile(depotProperties.getBaseDirectory().resolve("tmp"), "depot", "");
+            tmpFile = Files.createTempFile(depotProperties.getBaseDirectory().resolve("tmp"), "depot", "");
             CopyOption[] options = {StandardCopyOption.REPLACE_EXISTING};
 
             final var bytes = Files.copy(file.getInputStream(), tmpFile, options);
 
-            Files.move(tmpFile, fullPathAndFile, StandardCopyOption.ATOMIC_MOVE);
+            final var hashValue = hash ? DigestUtils.sha256Hex(Files.newInputStream(tmpFile)) : "-";
 
-            return new PutFileResponseDto(bytes, hash ? DigestUtils.sha256Hex(file.getInputStream()) : "-");
+            Files.move(tmpFile, fullPathAndFile, StandardCopyOption.ATOMIC_MOVE);
+            tmpFile = null; // Successfully moved, don't clean up in finally
+
+            return new PutFileResponseDto(bytes, hashValue);
         } catch (Exception e) {
             log.error("Could not store the file", e);
             throw new RuntimeException("Could not store the file. " + e.getMessage());
+        } finally {
+            // Clean up temp file if still exists (upload failed)
+            if (tmpFile != null) {
+                try {
+                    Files.deleteIfExists(tmpFile);
+                    log.debug("Cleaned up temporary file: {}", tmpFile);
+                } catch (IOException e) {
+                    log.error("Failed to clean up temporary file: {}", tmpFile, e);
+                }
+            }
         }
     }
 
