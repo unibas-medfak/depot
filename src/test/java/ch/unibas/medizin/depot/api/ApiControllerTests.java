@@ -5,11 +5,13 @@ import ch.unibas.medizin.depot.dto.*;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.IOUtils;
 import org.jspecify.annotations.NullMarked;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.web.server.LocalServerPort;
+import org.springframework.boot.webtestclient.autoconfigure.AutoConfigureWebTestClient;
 import org.springframework.core.io.ByteArrayResource;
 import org.springframework.core.io.FileSystemResource;
 import org.springframework.http.HttpStatus;
@@ -36,6 +38,7 @@ import static org.junit.jupiter.api.Assertions.*;
 
 @NullMarked
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
+@AutoConfigureWebTestClient(timeout = "PT1M")
 public class ApiControllerTests {
 
     private final LocalDate today = LocalDate.now(ZoneId.systemDefault());
@@ -48,10 +51,16 @@ public class ApiControllerTests {
     @LocalServerPort
     private int port;
 
+    private WebTestClient  webTestClient;
+
+    @BeforeEach
+    void setUp() {
+        webTestClient = WebTestClient.bindToServer().baseUrl("http://localhost:" + port).build();
+    }
+
     @Test
     public void Register_client_with_valid_request() {
         var validRegisterRequest = new AccessTokenRequestDto("tenant_b", "tenant_b_secret", "re_al-m1", "Sub Ject 01.01.2099", "r", tomorrow);
-        var webTestClient = WebTestClient.bindToServer().baseUrl("http://localhost:" + port).responseTimeout(Duration.ofMinutes(1L)).build();
         var validRegisterResponse = webTestClient.post()
                 .uri("/admin/register")
                 .bodyValue(validRegisterRequest)
@@ -67,7 +76,6 @@ public class ApiControllerTests {
     @Test
     public void Request_token() {
         var validRegisterRequest = new AccessTokenRequestDto("tenant_a", "tenant_a_secret", "re_al-m1", "subject1", "r", LocalDate.of(2037, 11, 13));
-        var webTestClient = WebTestClient.bindToServer().baseUrl("http://localhost:" + port).responseTimeout(Duration.ofMinutes(1L)).build();
         var validRegisterResponse = webTestClient.post()
                 .uri("/admin/register")
                 .bodyValue(validRegisterRequest)
@@ -85,7 +93,6 @@ public class ApiControllerTests {
     @Test
     public void Request_token_qr() throws IOException {
         var validRegisterRequest = new AccessTokenRequestDto("tenant_a", "tenant_a_secret", "re_al-m2", "subject2", "w", LocalDate.of(2050, 12, 31));
-        var webTestClient = WebTestClient.bindToServer().baseUrl("http://localhost:" + port).responseTimeout(Duration.ofMinutes(1L)).build();
         var validRegisterResponse = webTestClient.post()
                 .uri("/admin/qr")
                 .bodyValue(validRegisterRequest)
@@ -105,7 +112,6 @@ public class ApiControllerTests {
     @Test
     public void Deny_client_with_invalid_password() {
         var invalidRegisterRequest = new AccessTokenRequestDto("tenant_a", "wrong_secret", "realm", "subject", "r", tomorrow);
-        var webTestClient = WebTestClient.bindToServer().baseUrl("http://localhost:" + port).responseTimeout(Duration.ofMinutes(1L)).build();
         webTestClient.post()
                 .uri("/admin/register")
                 .bodyValue(invalidRegisterRequest)
@@ -116,7 +122,6 @@ public class ApiControllerTests {
     @Test
     public void Deny_client_with_invalid_tenant() {
         var invalidRegisterRequest = new AccessTokenRequestDto("tenant_c", "tenant_a_secret", "realm", "subject", "r", tomorrow);
-        var webTestClient = WebTestClient.bindToServer().baseUrl("http://localhost:" + port).responseTimeout(Duration.ofMinutes(1L)).build();
         webTestClient.post()
                 .uri("/admin/register")
                 .bodyValue(invalidRegisterRequest)
@@ -127,7 +132,6 @@ public class ApiControllerTests {
     @Test
     public void Deny_client_with_invalid_tenant_name() {
         var invalidRegisterRequest = new AccessTokenRequestDto("tenant a", "tenant_a_secret", "realm", "subject", "r", tomorrow);
-        var webTestClient = WebTestClient.bindToServer().baseUrl("http://localhost:" + port).responseTimeout(Duration.ofMinutes(1L)).build();
         webTestClient.post()
                 .uri("/admin/register")
                 .bodyValue(invalidRegisterRequest)
@@ -138,7 +142,6 @@ public class ApiControllerTests {
     @Test
     public void Deny_client_with_invalid_realm_name() {
         var invalidRegisterRequest = new AccessTokenRequestDto("tenant_a", "tenant_a_secret", "realm$_", "subject", "r", tomorrow);
-        var webTestClient = WebTestClient.bindToServer().baseUrl("http://localhost:" + port).responseTimeout(Duration.ofMinutes(1L)).build();
         webTestClient.post()
                 .uri("/admin/register")
                 .bodyValue(invalidRegisterRequest)
@@ -149,7 +152,6 @@ public class ApiControllerTests {
     @Test
     public void Deny_client_with_invalid_blank_in_realm_name() {
         var invalidRegisterRequest = new AccessTokenRequestDto("tenant_a", "tenant_a_secret", "re alm", "subject", "r", tomorrow);
-        var webTestClient = WebTestClient.bindToServer().baseUrl("http://localhost:" + port).responseTimeout(Duration.ofMinutes(1L)).build();
         webTestClient.post()
                 .uri("/admin/register")
                 .bodyValue(invalidRegisterRequest)
@@ -160,7 +162,6 @@ public class ApiControllerTests {
     @Test
     public void Deny_client_with_invalid_subject() {
         var invalidRegisterRequest = new AccessTokenRequestDto("tenant_a", "tenant_a_secret", "realm", " ", "r", tomorrow);
-        var webTestClient = WebTestClient.bindToServer().baseUrl("http://localhost:" + port).responseTimeout(Duration.ofMinutes(1L)).build();
         webTestClient.post()
                 .uri("/admin/register")
                 .bodyValue(invalidRegisterRequest)
@@ -171,7 +172,6 @@ public class ApiControllerTests {
     @Test
     public void Deny_client_with_blank_realm() {
         var invalidRegisterRequest = new AccessTokenRequestDto("tenant_a", "tenant_a_secret", "", "subject", "r", tomorrow);
-        var webTestClient = WebTestClient.bindToServer().baseUrl("http://localhost:" + port).responseTimeout(Duration.ofMinutes(1L)).build();
         webTestClient.post()
                 .uri("/admin/register")
                 .bodyValue(invalidRegisterRequest)
@@ -182,7 +182,6 @@ public class ApiControllerTests {
     @Test
     public void Deny_client_with_blank_subject() {
         var invalidRegisterRequest = new AccessTokenRequestDto("tenant_a", "tenant_a_secret", "realm", "", "r", tomorrow);
-        var webTestClient = WebTestClient.bindToServer().baseUrl("http://localhost:" + port).responseTimeout(Duration.ofMinutes(1L)).build();
         webTestClient.post()
                 .uri("/admin/register")
                 .bodyValue(invalidRegisterRequest)
@@ -193,7 +192,6 @@ public class ApiControllerTests {
     @Test
     public void Deny_client_with_linebreak_in_realm() {
         var invalidRegisterRequest = new AccessTokenRequestDto("tenant_a", "tenant_a_secret", "re\nlm", "subject", "r", tomorrow);
-        var webTestClient = WebTestClient.bindToServer().baseUrl("http://localhost:" + port).responseTimeout(Duration.ofMinutes(1L)).build();
         webTestClient.post()
                 .uri("/admin/register")
                 .bodyValue(invalidRegisterRequest)
@@ -204,7 +202,6 @@ public class ApiControllerTests {
     @Test
     public void Deny_client_with_linebreak_in_subject() {
         var invalidRegisterRequest = new AccessTokenRequestDto("tenant_a", "tenant_a_secret", "realm", "sub\nject", "r", tomorrow);
-        var webTestClient = WebTestClient.bindToServer().baseUrl("http://localhost:" + port).responseTimeout(Duration.ofMinutes(1L)).build();
         webTestClient.post()
                 .uri("/admin/register")
                 .bodyValue(invalidRegisterRequest)
@@ -215,7 +212,6 @@ public class ApiControllerTests {
     @Test
     public void Deny_client_with_invalid_admin_password() {
         var invalidRegisterRequest = new AccessTokenRequestDto("tenant_a", "wrong_password", "realm", "subject", "r", tomorrow);
-        var webTestClient = WebTestClient.bindToServer().baseUrl("http://localhost:" + port).responseTimeout(Duration.ofMinutes(1L)).build();
         webTestClient.post()
                 .uri("/admin/register")
                 .bodyValue(invalidRegisterRequest)
@@ -226,7 +222,6 @@ public class ApiControllerTests {
     @Test
     public void Deny_client_with_expiration_date_not_in_the_future() {
         var todayRegisterRequest = new AccessTokenRequestDto("tenant_a", "tenant_a_secret", "realm", "subject", "r", today);
-        var webTestClient = WebTestClient.bindToServer().baseUrl("http://localhost:" + port).responseTimeout(Duration.ofMinutes(1L)).build();
         webTestClient.post()
                 .uri("/admin/register")
                 .bodyValue(todayRegisterRequest)
@@ -238,7 +233,6 @@ public class ApiControllerTests {
     @Disabled
     public void Deny_requests_from_client_with_expiration_date_of_today() {
         var todayRegisterRequest = new AccessTokenRequestDto("tenant_a", "tenant_a_secret", "realm", "subject", "r", today);
-        var webTestClient = WebTestClient.bindToServer().baseUrl("http://localhost:" + port).responseTimeout(Duration.ofMinutes(1L)).build();
         var todayRegisterResponse = webTestClient.post()
                 .uri("/admin/register")
                 .bodyValue(todayRegisterRequest)
@@ -261,7 +255,6 @@ public class ApiControllerTests {
         FileUtils.deleteDirectory(depotProperties.getBaseDirectory().resolve("tenant_a").resolve("realm").toFile());
 
         var registerRequest = new AccessTokenRequestDto("tenant_a", "tenant_a_secret", "realm", "subject", "rw", tomorrow);
-        var webTestClient = WebTestClient.bindToServer().baseUrl("http://localhost:" + port).responseTimeout(Duration.ofMinutes(1L)).build();
         var registerResponse = webTestClient.post()
                 .uri("/admin/register")
                 .bodyValue(registerRequest)
@@ -299,7 +292,6 @@ public class ApiControllerTests {
         FileUtils.deleteDirectory(depotProperties.getBaseDirectory().resolve("tenant_a").resolve("realm").toFile());
 
         var registerRequest = new AccessTokenRequestDto("tenant_a", "tenant_a_secret", "realm", "subject", "rw", tomorrow);
-        var webTestClient = WebTestClient.bindToServer().baseUrl("http://localhost:" + port).responseTimeout(Duration.ofMinutes(1L)).build();
         var registerResponse = webTestClient.post()
                 .uri("/admin/register")
                 .bodyValue(registerRequest)
@@ -355,7 +347,6 @@ public class ApiControllerTests {
         FileUtils.deleteDirectory(depotProperties.getBaseDirectory().resolve("tenant_a").resolve("realm").toFile());
 
         var registerRequest = new AccessTokenRequestDto("tenant_a", "tenant_a_secret", "realm", "subject", "rw", tomorrow);
-        var webTestClient = WebTestClient.bindToServer().baseUrl("http://localhost:" + port).responseTimeout(Duration.ofMinutes(1L)).build();
         var registerResponse = webTestClient.post()
                 .uri("/admin/register")
                 .bodyValue(registerRequest)
@@ -411,7 +402,6 @@ public class ApiControllerTests {
         FileUtils.deleteDirectory(depotProperties.getBaseDirectory().resolve("tenant_a").resolve("realm").toFile());
 
         var registerRequest = new AccessTokenRequestDto("tenant_a", "tenant_a_secret", "realm", "subject", "rw", tomorrow);
-        var webTestClient = WebTestClient.bindToServer().baseUrl("http://localhost:" + port).responseTimeout(Duration.ofMinutes(1L)).build();
         var registerResponse = webTestClient.post()
                 .uri("/admin/register")
                 .bodyValue(registerRequest)
@@ -503,7 +493,6 @@ public class ApiControllerTests {
     @Test
     public void Deny_read_only_put() throws IOException {
         var registerRequest = new AccessTokenRequestDto("tenant_a", "tenant_a_secret", "realm", "subject", "r", tomorrow);
-        var webTestClient = WebTestClient.bindToServer().baseUrl("http://localhost:" + port).responseTimeout(Duration.ofMinutes(1L)).build();
         var registerResponse = webTestClient.post()
                 .uri("/admin/register")
                 .bodyValue(registerRequest)
@@ -665,7 +654,6 @@ public class ApiControllerTests {
     @Test
     public void Deny_write_only_get() {
         var registerRequest = new AccessTokenRequestDto("tenant_a", "tenant_a_secret", "realm", "subject", "w", tomorrow);
-        var webTestClient = WebTestClient.bindToServer().baseUrl("http://localhost:" + port).responseTimeout(Duration.ofMinutes(1L)).build();
         var registerResponse = webTestClient.post()
                 .uri("/admin/register")
                 .bodyValue(registerRequest)
@@ -688,9 +676,7 @@ public class ApiControllerTests {
     @Test
     public void Allow_list_for_blank_tenant() throws IOException {
         FileUtils.deleteDirectory(depotProperties.getBaseDirectory().resolve("tenant_b").resolve("realm").toFile());
-
         var registerRequest = new AccessTokenRequestDto("tenant_b", "tenant_b_secret", "realm", "subject", "r", tomorrow);
-        var webTestClient = WebTestClient.bindToServer().baseUrl("http://localhost:" + port).responseTimeout(Duration.ofMinutes(1L)).build();
         var registerResponse = webTestClient.post()
                 .uri("/admin/register")
                 .bodyValue(registerRequest)
@@ -719,7 +705,6 @@ public class ApiControllerTests {
     @Test
     public void Deny_write_only_list() {
         var registerRequest = new AccessTokenRequestDto("tenant_a", "tenant_a_secret", "realm", "subject", "w", tomorrow);
-        var webTestClient = WebTestClient.bindToServer().baseUrl("http://localhost:" + port).responseTimeout(Duration.ofMinutes(1L)).build();
         var registerResponse = webTestClient.post()
                 .uri("/admin/register")
                 .bodyValue(registerRequest)
@@ -742,7 +727,6 @@ public class ApiControllerTests {
     @Test
     public void Deny_write_only_delete() {
         var registerRequest = new AccessTokenRequestDto("tenant_a", "tenant_a_secret", "realm", "subject", "wr", tomorrow);
-        var webTestClient = WebTestClient.bindToServer().baseUrl("http://localhost:" + port).responseTimeout(Duration.ofMinutes(1L)).build();
         var registerResponse = webTestClient.post()
                 .uri("/admin/register")
                 .bodyValue(registerRequest)
@@ -765,9 +749,7 @@ public class ApiControllerTests {
     @Test
     public void Delete() throws IOException {
         FileUtils.deleteDirectory(depotProperties.getBaseDirectory().resolve("tenant_a").resolve("realm").toFile());
-
         var registerRequest = new AccessTokenRequestDto("tenant_a", "tenant_a_secret", "realm", "subject", "rdw", tomorrow);
-        var webTestClient = WebTestClient.bindToServer().baseUrl("http://localhost:" + port).responseTimeout(Duration.ofMinutes(1L)).build();
         var registerResponse = webTestClient.post()
                 .uri("/admin/register")
                 .bodyValue(registerRequest)
