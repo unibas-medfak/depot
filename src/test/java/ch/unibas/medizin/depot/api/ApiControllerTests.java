@@ -11,7 +11,6 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.web.server.LocalServerPort;
-import org.springframework.boot.webtestclient.autoconfigure.AutoConfigureWebTestClient;
 import org.springframework.core.io.ByteArrayResource;
 import org.springframework.core.io.FileSystemResource;
 import org.springframework.http.HttpStatus;
@@ -38,7 +37,6 @@ import static org.junit.jupiter.api.Assertions.*;
 
 @NullMarked
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
-@AutoConfigureWebTestClient(timeout = "PT1M")
 public class ApiControllerTests {
 
     private final LocalDate today = LocalDate.now(ZoneId.systemDefault());
@@ -55,7 +53,7 @@ public class ApiControllerTests {
 
     @BeforeEach
     void setUp() {
-        webTestClient = WebTestClient.bindToServer().baseUrl("http://localhost:" + port).build();
+        webTestClient = WebTestClient.bindToServer().baseUrl("http://localhost:" + port).responseTimeout(Duration.ofMinutes(1)).build();
     }
 
     @Test
