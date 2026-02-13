@@ -10,7 +10,7 @@ import ch.unibas.medizin.depot.exception.PathNotFoundException;
 import ch.unibas.medizin.depot.security.JWTAuthorizationFilter;
 import ch.unibas.medizin.depot.util.DepotUtil;
 import jakarta.annotation.PostConstruct;
-import org.apache.commons.codec.digest.DigestUtils;
+import org.apache.commons.codec.digest.MurmurHash3;
 import org.jspecify.annotations.NullMarked;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -154,7 +154,8 @@ public record DepotService(
 
             final var bytes = Files.copy(file.getInputStream(), tmpFile, options);
 
-            final var hashValue = hash ? DigestUtils.sha256Hex(Files.newInputStream(tmpFile)) : "-";
+            final var hash128 = MurmurHash3.hash128x64(Files.readAllBytes(tmpFile));
+            final var hashValue = hash ? String.format("%016x%016x", hash128[0], hash128[1]) : "-";
 
             Files.move(tmpFile, fullPathAndFile, StandardCopyOption.ATOMIC_MOVE);
             tmpFile = null; // Successfully moved, don't clean up in finally

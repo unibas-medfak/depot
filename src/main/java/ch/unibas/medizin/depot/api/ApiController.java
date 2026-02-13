@@ -70,7 +70,7 @@ public class ApiController {
     @Operation(summary = "Store a file")
     public ResponseEntity<PutFileResponseDto> put(@Parameter(description = "Multipart file to be stored") @RequestParam("file") final MultipartFile file,
                                                   @Parameter(description = "Path where the file will be stored", example = "pictures/cats") @RequestParam final String path,
-                                                  @Parameter(description = "Whether the response shall contain a SHA256 hash of the stored data", example = "true") @RequestParam(required = false) final boolean hash) {
+                                                  @Parameter(description = "Whether the response shall contain a Murmur3 hash of the stored data", example = "true") @RequestParam(required = false) final boolean hash) {
 
         if (!DepotUtil.isValidPath(path)) {
             log.error("Invalid request - put path {}", path);

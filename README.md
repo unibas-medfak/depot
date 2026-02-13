@@ -13,11 +13,11 @@ http://localhost:8080/swagger-ui/index.html
 
 ## run with docker compose
 
-Edit run.sh
+Edit docker-run.sh
 
 ```console
-$ ./build.sh
-$ ./run.sh
+$ ./docker-build.sh
+$ ./docker-run.sh
 ```
 https://localhost/swagger-ui/index.html
 
