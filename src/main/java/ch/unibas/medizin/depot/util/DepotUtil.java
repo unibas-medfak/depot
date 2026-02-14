@@ -49,11 +49,19 @@ public interface DepotUtil {
     }
 
     static boolean isValidFilename(final String candidate) {
-        return isValid(candidate, false);
+        return !candidate.startsWith(".") && isValid(candidate, false);
     }
 
     static boolean isValidPath(final String candidate) {
-        return isValid(candidate, true);
+        if (!isValid(candidate, true)) {
+            return false;
+        }
+        for (final var segment : candidate.split("/")) {
+            if (!segment.isEmpty() && segment.startsWith(".")) {
+                return false;
+            }
+        }
+        return true;
     }
 
     private static boolean isValid(final String candidate, final boolean allowSlash) {
