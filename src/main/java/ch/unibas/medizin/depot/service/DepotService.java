@@ -59,7 +59,7 @@ public record DepotService(
         final var entries = new ArrayList<FileDto>();
 
         try (final var fileList = Files.list(fullPath)) {
-            fileList.forEach(entry -> {
+            fileList.filter(entry -> !entry.getFileName().toString().startsWith(".")).forEach(entry -> {
                 try {
                     final var basicFileAttributes = Files.readAttributes(entry, BasicFileAttributes.class);
                     final var isDirectory = Files.isDirectory(entry);
@@ -164,6 +164,19 @@ public record DepotService(
 
             final var hash128 = MurmurHash3.hash128x64(Files.readAllBytes(tmpFile));
             final var hashValue = hash ? String.format("%016x%016x", hash128[0], hash128[1]) : "-";
+
+            if (depotProperties.isBackup() && Files.exists(fullPathAndFile)) {
+                final var existingHash128 = MurmurHash3.hash128x64(Files.readAllBytes(fullPathAndFile));
+                if (!Arrays.equals(hash128, existingHash128)) {
+                    final var fileName = fullPathAndFile.getFileName().toString();
+                    final var backupDir = fullPath.resolve("." + fileName);
+                    Files.createDirectories(backupDir);
+                    final var existingBackups = Files.list(backupDir).count();
+                    final var backupFile = backupDir.resolve(fileName + "_" + (existingBackups + 1));
+                    Files.move(fullPathAndFile, backupFile, StandardCopyOption.ATOMIC_MOVE);
+                    log.info("Backed up {} to {}", fullPathAndFile, backupFile);
+                }
+            }
 
             Files.move(tmpFile, fullPathAndFile, StandardCopyOption.ATOMIC_MOVE);
             tmpFile = null; // Successfully moved, don't clean up in finally
