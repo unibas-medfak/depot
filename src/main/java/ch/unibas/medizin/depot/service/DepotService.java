@@ -11,6 +11,7 @@ import ch.unibas.medizin.depot.security.JWTAuthorizationFilter;
 import ch.unibas.medizin.depot.util.DepotUtil;
 import jakarta.annotation.PostConstruct;
 import org.apache.commons.codec.digest.MurmurHash3;
+import org.apache.logging.log4j.util.Strings;
 import org.jspecify.annotations.NullMarked;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -47,7 +48,7 @@ public record DepotService(
         }
     }
 
-    public List<FileDto> list(final String path) {
+    public List<FileDto> list(final String path, final boolean hash) {
         final var tokenData = getTokenData();
         final var normalizedPath = DepotUtil.normalizePath(path);
         final var fullPath = tokenData.basePath().resolve(normalizedPath);
@@ -61,12 +62,19 @@ public record DepotService(
             fileList.forEach(entry -> {
                 try {
                     final var basicFileAttributes = Files.readAttributes(entry, BasicFileAttributes.class);
+                    final var isDirectory = Files.isDirectory(entry);
+                    String hashValue = Strings.EMPTY;
+                    if (hash && !isDirectory) {
+                        final var hash128 = MurmurHash3.hash128x64(Files.readAllBytes(entry));
+                        hashValue = String.format("%016x%016x", hash128[0], hash128[1]);
+                    }
                     entries.add(
                             new FileDto(
                                     entry.getFileName().toString(),
-                                    Files.isDirectory(entry) ? FileDto.FileType.FOLDER : FileDto.FileType.FILE,
-                                    Files.isDirectory(entry) ? 0 : basicFileAttributes.size(),
-                                    basicFileAttributes.lastModifiedTime().toInstant()
+                                    isDirectory ? FileDto.FileType.FOLDER : FileDto.FileType.FILE,
+                                    isDirectory ? 0 : basicFileAttributes.size(),
+                                    basicFileAttributes.lastModifiedTime().toInstant(),
+                                    hashValue
                             )
                     );
                 } catch (IOException e) {

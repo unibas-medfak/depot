@@ -10,7 +10,8 @@ import java.time.Instant;
 public record FileDto(@NotBlank String name,
                       @NotNull FileType type,
                       @NotNull Long size,
-                      @NotNull Instant modified) {
+                      @NotNull Instant modified,
+                      @NotNull String hash) {
 
     public enum FileType {
         FILE, FOLDER

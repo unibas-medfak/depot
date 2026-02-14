@@ -44,13 +44,14 @@ public class ApiController {
     @GetMapping("/list")
     @PreAuthorize("hasRole('READ')")
     @Operation(summary = "List all files and folders in the given path")
-    public ResponseEntity<List<FileDto>> list(@Parameter(description = "Path to be listed", example = "pictures/cats") @RequestParam("path") final String path) {
+    public ResponseEntity<List<FileDto>> list(@Parameter(description = "Path to be listed", example = "pictures/cats") @RequestParam("path") final String path,
+                                                  @Parameter(description = "Whether the response shall contain a Murmur3 hash of each file", example = "true") @RequestParam(required = false) final boolean hash) {
         if (!DepotUtil.isValidPath(path)) {
             log.error("Invalid request - list path {}", path);
             throw new InvalidRequestException("path", path, INVALID_REQUEST_DETAIL);
         }
 
-        return ResponseEntity.ok(depotService.list(path));
+        return ResponseEntity.ok(depotService.list(path, hash));
     }
 
     @GetMapping(value = "/get", produces = MediaType.APPLICATION_OCTET_STREAM_VALUE)
