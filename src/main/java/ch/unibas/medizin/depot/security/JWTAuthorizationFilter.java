@@ -3,6 +3,7 @@ package ch.unibas.medizin.depot.security;
 import ch.unibas.medizin.depot.config.DepotProperties;
 import com.auth0.jwt.JWT;
 import com.auth0.jwt.algorithms.Algorithm;
+import com.auth0.jwt.exceptions.JWTVerificationException;
 import com.auth0.jwt.interfaces.DecodedJWT;
 import com.auth0.jwt.interfaces.JWTVerifier;
 import jakarta.servlet.FilterChain;
@@ -10,6 +11,8 @@ import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import org.jspecify.annotations.NullMarked;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
@@ -23,6 +26,8 @@ import java.util.ArrayList;
 @Component
 @NullMarked
 public class JWTAuthorizationFilter extends OncePerRequestFilter {
+
+    private static final Logger log = LoggerFactory.getLogger(JWTAuthorizationFilter.class);
 
     public static final String TOKEN_DATA_DELIMITER = String.valueOf(Character.LINE_SEPARATOR);
 
@@ -40,8 +45,12 @@ public class JWTAuthorizationFilter extends OncePerRequestFilter {
     @Override
     protected void doFilterInternal(final HttpServletRequest httpServletRequest, final HttpServletResponse httpServletResponse, final FilterChain filterChain) throws ServletException, IOException {
         if (checkJWTToken(httpServletRequest)) {
-            final var decodedJWT = validateToken(httpServletRequest);
-            setUpSpringAuthentication(decodedJWT);
+            try {
+                final var decodedJWT = validateToken(httpServletRequest);
+                setUpSpringAuthentication(decodedJWT);
+            } catch (JWTVerificationException e) {
+                log.error("JWT verification failed: {}", e.getMessage());
+            }
         }
         filterChain.doFilter(httpServletRequest, httpServletResponse);
     }
