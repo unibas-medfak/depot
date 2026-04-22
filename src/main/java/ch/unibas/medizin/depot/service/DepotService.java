@@ -24,7 +24,6 @@ import org.springframework.util.StringUtils;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.io.IOException;
-import java.io.File;
 import java.nio.file.*;
 import java.nio.file.attribute.BasicFileAttributes;
 import java.util.*;
@@ -128,7 +127,7 @@ public record DepotService(
         final var fullPathAndFile = fullPath.resolve(Objects.requireNonNull(file.getOriginalFilename())).normalize().toAbsolutePath();
 
         // Ensure the resolved file stays within the tenant/base path
-        if (!fullPathAndFile.startsWith(fullPath + File.separator)) {
+        if (!fullPathAndFile.startsWith(fullPath)) {
             log.error("Attempt to store file outside permitted path: {}", fullPathAndFile);
             throw new IllegalArgumentException("Invalid file path");
         }
