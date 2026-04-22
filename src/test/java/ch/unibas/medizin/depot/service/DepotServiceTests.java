@@ -11,6 +11,8 @@ import org.springframework.security.test.context.support.WithMockUser;
 import java.util.Arrays;
 import java.util.concurrent.Executors;
 
+import static org.junit.jupiter.api.Assertions.assertThrows;
+
 @SpringBootTest
 public class DepotServiceTests {
 
@@ -35,6 +37,14 @@ public class DepotServiceTests {
                 executor.execute(() -> depotService.put(mockFile, "/concurrent/test/", true));
             }
         }
+    }
+
+    @Test
+    @WithMockUser(username = "tenant" + Character.LINE_SEPARATOR + "realm" + Character.LINE_SEPARATOR + "subject")
+    public void Put_rejects_parent_directory_traversal_in_filename() {
+        var mockFile = new MockMultipartFile("file", "../../../evil.txt", "text/plain", "x".getBytes());
+        assertThrows(IllegalArgumentException.class,
+                () -> depotService.put(mockFile, "/traversal/", false));
     }
 
 }
