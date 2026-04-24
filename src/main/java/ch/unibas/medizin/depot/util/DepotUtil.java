@@ -56,7 +56,7 @@ public interface DepotUtil {
         if (!isValid(candidate, true)) {
             return false;
         }
-        for (final var segment : candidate.split("/")) {
+        for (final var segment : candidate.split("/", -1)) {
             if (segment.startsWith(".")) {
                 return false;
             }

@@ -57,6 +57,21 @@ export function isExpired(info: TokenInfo): boolean {
   return info.exp * 1000 <= Date.now()
 }
 
+export function consumeHashToken(): void {
+  const hash = window.location.hash
+  if (!hash) return
+  const params = new URLSearchParams(hash.startsWith('#') ? hash.slice(1) : hash)
+  const token = params.get('token')
+  if (!token) return
+
+  const info = decodeToken(token)
+  if (info && !isExpired(info)) {
+    localStorage.setItem(TOKEN_KEY, token)
+  }
+  const { pathname, search } = window.location
+  window.history.replaceState(null, '', pathname + search)
+}
+
 interface AuthState {
   token: string | null
   info: TokenInfo | null

@@ -11,6 +11,7 @@ import org.springframework.security.test.context.support.WithMockUser;
 import java.util.Arrays;
 import java.util.concurrent.Executors;
 
+import static java.nio.charset.StandardCharsets.UTF_8;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
 @SpringBootTest
@@ -42,7 +43,7 @@ public class DepotServiceTests {
     @Test
     @WithMockUser(username = "tenant" + Character.LINE_SEPARATOR + "realm" + Character.LINE_SEPARATOR + "subject")
     public void Put_rejects_parent_directory_traversal_in_filename() {
-        var mockFile = new MockMultipartFile("file", "../../../evil.txt", "text/plain", "x".getBytes());
+        var mockFile = new MockMultipartFile("file", "../../../evil.txt", "text/plain", "x".getBytes(UTF_8));
         assertThrows(IllegalArgumentException.class,
                 () -> depotService.put(mockFile, "/traversal/", false));
     }

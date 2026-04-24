@@ -13,6 +13,7 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 
+import static java.nio.charset.StandardCharsets.UTF_8;
 import static org.junit.jupiter.api.Assertions.*;
 
 @SpringBootTest(properties = "depot.backup=true")
@@ -37,10 +38,10 @@ public class BackupTests {
     @Test
     @WithMockUser(username = "tenant" + Character.LINE_SEPARATOR + "realm" + Character.LINE_SEPARATOR + "subject")
     public void Backup_created_on_overwrite_with_different_content() {
-        var file1 = new MockMultipartFile("file", "test.txt", "text/plain", "content v1".getBytes());
+        var file1 = new MockMultipartFile("file", "test.txt", "text/plain", "content v1".getBytes(UTF_8));
         depotService.put(file1, "backup", false);
 
-        var file2 = new MockMultipartFile("file", "test.txt", "text/plain", "content v2".getBytes());
+        var file2 = new MockMultipartFile("file", "test.txt", "text/plain", "content v2".getBytes(UTF_8));
         depotService.put(file2, "backup", false);
 
         var backupDir = realmPath.resolve(".test.txt");
@@ -51,10 +52,10 @@ public class BackupTests {
     @Test
     @WithMockUser(username = "tenant" + Character.LINE_SEPARATOR + "realm" + Character.LINE_SEPARATOR + "subject")
     public void No_backup_on_overwrite_with_same_content() {
-        var file1 = new MockMultipartFile("file", "same.txt", "text/plain", "identical".getBytes());
+        var file1 = new MockMultipartFile("file", "same.txt", "text/plain", "identical".getBytes(UTF_8));
         depotService.put(file1, "backup", false);
 
-        var file2 = new MockMultipartFile("file", "same.txt", "text/plain", "identical".getBytes());
+        var file2 = new MockMultipartFile("file", "same.txt", "text/plain", "identical".getBytes(UTF_8));
         depotService.put(file2, "backup", false);
 
         var backupDir = realmPath.resolve(".same.txt");
@@ -64,13 +65,13 @@ public class BackupTests {
     @Test
     @WithMockUser(username = "tenant" + Character.LINE_SEPARATOR + "realm" + Character.LINE_SEPARATOR + "subject")
     public void Multiple_backups_numbered_sequentially() {
-        var file1 = new MockMultipartFile("file", "multi.txt", "text/plain", "v1".getBytes());
+        var file1 = new MockMultipartFile("file", "multi.txt", "text/plain", "v1".getBytes(UTF_8));
         depotService.put(file1, "backup", false);
 
-        var file2 = new MockMultipartFile("file", "multi.txt", "text/plain", "v2".getBytes());
+        var file2 = new MockMultipartFile("file", "multi.txt", "text/plain", "v2".getBytes(UTF_8));
         depotService.put(file2, "backup", false);
 
-        var file3 = new MockMultipartFile("file", "multi.txt", "text/plain", "v3".getBytes());
+        var file3 = new MockMultipartFile("file", "multi.txt", "text/plain", "v3".getBytes(UTF_8));
         depotService.put(file3, "backup", false);
 
         var backupDir = realmPath.resolve(".multi.txt");
@@ -83,10 +84,10 @@ public class BackupTests {
     @WithMockUser(username = "tenant" + Character.LINE_SEPARATOR + "realm" + Character.LINE_SEPARATOR + "subject")
     public void Backup_preserves_original_content() throws IOException {
         var originalContent = "original content";
-        var file1 = new MockMultipartFile("file", "preserve.txt", "text/plain", originalContent.getBytes());
+        var file1 = new MockMultipartFile("file", "preserve.txt", "text/plain", originalContent.getBytes(UTF_8));
         depotService.put(file1, "backup", false);
 
-        var file2 = new MockMultipartFile("file", "preserve.txt", "text/plain", "new content".getBytes());
+        var file2 = new MockMultipartFile("file", "preserve.txt", "text/plain", "new content".getBytes(UTF_8));
         depotService.put(file2, "backup", false);
 
         var backupFile = realmPath.resolve(".preserve.txt").resolve("preserve.txt_1");
@@ -97,7 +98,7 @@ public class BackupTests {
     @Test
     @WithMockUser(username = "tenant" + Character.LINE_SEPARATOR + "realm" + Character.LINE_SEPARATOR + "subject")
     public void No_backup_on_first_upload() {
-        var file = new MockMultipartFile("file", "fresh.txt", "text/plain", "content".getBytes());
+        var file = new MockMultipartFile("file", "fresh.txt", "text/plain", "content".getBytes(UTF_8));
         depotService.put(file, "backup", false);
 
         var backupDir = realmPath.resolve(".fresh.txt");
@@ -107,10 +108,10 @@ public class BackupTests {
     @Test
     @WithMockUser(username = "tenant" + Character.LINE_SEPARATOR + "realm" + Character.LINE_SEPARATOR + "subject")
     public void Backup_folders_not_in_list_response() {
-        var file1 = new MockMultipartFile("file", "listed.txt", "text/plain", "v1".getBytes());
+        var file1 = new MockMultipartFile("file", "listed.txt", "text/plain", "v1".getBytes(UTF_8));
         depotService.put(file1, "backup", false);
 
-        var file2 = new MockMultipartFile("file", "listed.txt", "text/plain", "v2".getBytes());
+        var file2 = new MockMultipartFile("file", "listed.txt", "text/plain", "v2".getBytes(UTF_8));
         depotService.put(file2, "backup", false);
 
         var entries = depotService.list("backup", false);
