@@ -1,7 +1,7 @@
 import { BrowserRouter, Navigate, Route, Routes } from 'react-router-dom'
 import { LogOut } from 'lucide-react'
 import { useAuth } from './auth'
-import { Login } from './components/Login'
+import { Info } from './components/Info'
 import { Browser } from './components/Browser'
 import { Preview } from './components/Preview'
 import './App.css'
@@ -10,7 +10,7 @@ function App() {
   const auth = useAuth()
 
   if (!auth.token || !auth.info) {
-    return <Login onLogin={auth.login} />
+    return <Info />
   }
 
   return (

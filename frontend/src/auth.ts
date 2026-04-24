@@ -101,13 +101,6 @@ export function useAuth() {
   return {
     token: state.token,
     info: state.info,
-    login: (token: string) => {
-      const info = decodeToken(token)
-      if (!info || isExpired(info)) return false
-      localStorage.setItem(TOKEN_KEY, token)
-      setState({ token, info })
-      return true
-    },
     logout: () => {
       localStorage.removeItem(TOKEN_KEY)
       setState({ token: null, info: null })
