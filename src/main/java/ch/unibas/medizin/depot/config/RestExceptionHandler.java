@@ -44,7 +44,7 @@ public record RestExceptionHandler() {
     }
 
     @ExceptionHandler(InvalidRequestException.class)
-    public ProblemDetail handleInvlidRequestException(final InvalidRequestException invalidRequestException) {
+    public ProblemDetail handleInvalidRequestException(final InvalidRequestException invalidRequestException) {
         var problemDetails = ProblemDetail.forStatusAndDetail(HttpStatus.BAD_REQUEST, invalidRequestException.getLocalizedMessage());
         problemDetails.setTitle("Invalid request");
         problemDetails.setProperty(invalidRequestException.getPropertyPath(), invalidRequestException.getValue());
