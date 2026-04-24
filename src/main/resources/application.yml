@@ -1,5 +1,5 @@
 depot:
-  base-directory: /var/local/depot
+  base-directory: /tmp/depot
   host: http://localhost:8080
   time-zone: UTC
   backup: false

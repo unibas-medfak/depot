@@ -38,3 +38,7 @@ key.pem
 
 release.properties
 pom.xml.releaseBackup
+
+### Frontend ###
+frontend/node_modules/
+frontend/dist/

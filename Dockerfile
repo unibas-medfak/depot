@@ -4,6 +4,7 @@ COPY .mvn/ .mvn
 COPY mvnw pom.xml ./
 RUN ./mvnw dependency:go-offline
 COPY ./src ./src
+COPY ./frontend ./frontend
 RUN ./mvnw clean install
 
 FROM eclipse-temurin:25-jre-noble
