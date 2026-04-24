@@ -67,7 +67,7 @@ public class AccessTokenRequestValidationTest {
 
         accessTokenRequestDto = new AccessTokenRequestDto("tenant", "pw", "a%b", "password", "w", LocalDate.now(ZoneId.systemDefault()).plusDays(1));
         violations = validator.validate(accessTokenRequestDto);
-        assertTrue(violations.isEmpty());
+        assertFalse(violations.isEmpty());
 
         accessTokenRequestDto = new AccessTokenRequestDto("tenant", "pw", "a\"b", "password", "rw", LocalDate.now(ZoneId.systemDefault()).plusDays(1));
         violations = validator.validate(accessTokenRequestDto);

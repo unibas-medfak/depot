@@ -170,7 +170,10 @@ public record DepotService(
                     final var fileName = fullPathAndFile.getFileName().toString();
                     final var backupDir = fullPath.resolve("." + fileName);
                     Files.createDirectories(backupDir);
-                    final var existingBackups = Files.list(backupDir).count();
+                    final long existingBackups;
+                    try (var backups = Files.list(backupDir)) {
+                        existingBackups = backups.count();
+                    }
                     final var backupFile = backupDir.resolve(fileName + "_" + (existingBackups + 1));
                     Files.move(fullPathAndFile, backupFile, StandardCopyOption.ATOMIC_MOVE);
                     log.info("Backed up {} to {}", fullPathAndFile, backupFile);

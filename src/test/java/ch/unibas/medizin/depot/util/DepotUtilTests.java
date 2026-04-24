@@ -19,16 +19,18 @@ public class DepotUtilTests {
 
     @Test
     void validTenantOrRealm() {
-        assertTrue(DepotUtil.isValidTenantOrRealm("1abc.-+@_%"));
-        assertFalse(DepotUtil.isValidTenantOrRealm("1abc.-&@_%"));
-        assertFalse(DepotUtil.isValidTenantOrRealm("1abc.-/@_%"));
+        assertTrue(DepotUtil.isValidTenantOrRealm("1abc.-+@_"));
+        assertFalse(DepotUtil.isValidTenantOrRealm("1abc.-&@_"));
+        assertFalse(DepotUtil.isValidTenantOrRealm("1abc.-/@_"));
+        assertFalse(DepotUtil.isValidTenantOrRealm("1abc.-@_%"));
     }
 
     @Test
     void validFilename() {
-        assertTrue(DepotUtil.isValidFilename("1abc.-@_%.txt"));
-        assertFalse(DepotUtil.isValidFilename("1abc.-!@_%.txt"));
-        assertFalse(DepotUtil.isValidFilename("1abc.-/@_%.txt"));
+        assertTrue(DepotUtil.isValidFilename("1abc.-@_.txt"));
+        assertFalse(DepotUtil.isValidFilename("1abc.-!@_.txt"));
+        assertFalse(DepotUtil.isValidFilename("1abc.-/@_.txt"));
+        assertFalse(DepotUtil.isValidFilename("1abc.-@_%.txt"));
     }
 
     @Test
@@ -41,9 +43,10 @@ public class DepotUtilTests {
 
     @Test
     void validPath() {
-        assertTrue(DepotUtil.isValidPath("1abc.-@_%.txt"));
-        assertFalse(DepotUtil.isValidFilename("1abc.-!@_%.txt"));
-        assertFalse(DepotUtil.isValidFilename("1abc.-/@_%.txt"));
+        assertTrue(DepotUtil.isValidPath("1abc.-@_.txt"));
+        assertFalse(DepotUtil.isValidPath("1abc.-!@_.txt"));
+        assertFalse(DepotUtil.isValidPath("foo%bar"));
+        assertFalse(DepotUtil.isValidPath("foo/bar%baz"));
     }
 
     @Test

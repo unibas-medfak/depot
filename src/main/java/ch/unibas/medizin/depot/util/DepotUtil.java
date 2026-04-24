@@ -11,7 +11,7 @@ public interface DepotUtil {
     String LOGFILE_NAME = "depot-access.log";
 
     static Path normalizePath(final String path) {
-        var normalizedPath = path.replaceAll(" ", "");
+        var normalizedPath = path.replace(" ", "");
 
         var changed = true;
 
@@ -57,7 +57,7 @@ public interface DepotUtil {
             return false;
         }
         for (final var segment : candidate.split("/")) {
-            if (!segment.isEmpty() && segment.startsWith(".")) {
+            if (segment.startsWith(".")) {
                 return false;
             }
         }
@@ -74,7 +74,6 @@ public interface DepotUtil {
                     && candidateChar != '_'
                     && candidateChar != '-'
                     && candidateChar != '@'
-                    && candidateChar != '%'
                     && candidateChar != '+'
                     && (!allowSlash || candidateChar != '/')) {
                 return false;

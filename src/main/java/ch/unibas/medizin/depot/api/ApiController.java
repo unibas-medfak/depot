@@ -33,7 +33,7 @@ public class ApiController {
 
     private static final Logger log = LoggerFactory.getLogger(ApiController.class);
 
-    private static final String INVALID_REQUEST_DETAIL = "must only contain letters, digits and the following chars . _ - @ % + /";
+    private static final String INVALID_REQUEST_DETAIL = "must only contain letters, digits and the following chars . _ - @ + /";
 
     private final DepotService depotService;
 
