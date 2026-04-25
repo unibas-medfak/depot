@@ -72,8 +72,19 @@ Passwords are stored as bcrypt hash https://bcrypt-generator.com/
 
 ## release
 
+Releases are tag-driven. To cut version `1.2.3`:
+
 ```console
-mvn release:prepare
-mvn release:perform -Darguments="-Dmaven.deploy.skip=true"
+$ ./mvnw versions:set -DnewVersion=1.2.3 -DgenerateBackupPoms=false
+$ git commit -am "Release 1.2.3"
+$ git tag v1.2.3
+$ git push origin master v1.2.3
 ```
+
+Pushing the `v1.2.3` tag triggers three workflows:
+- `release.yml` — builds the Linux x86_64 native image and creates a GitHub Release with auto-generated notes and the binary attached.
+- `docker-publish.yml` — builds and pushes the multi-arch Docker image to ghcr.io.
+- `bump-snapshot.yml` — opens a PR bumping `pom.xml` to the next patch `-SNAPSHOT` (e.g. `1.2.4-SNAPSHOT`). Review and merge it.
+
+The release workflow refuses to run if `pom.xml`'s version doesn't match the tag.
 

@@ -1,0 +1,45 @@
+name: Bump to next SNAPSHOT
+
+on:
+  push:
+    tags:
+      - 'v*.*.*'
+
+permissions:
+  contents: write
+  pull-requests: write
+
+jobs:
+  bump:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          ref: master
+
+      - name: Set up JDK 25
+        uses: actions/setup-java@v5
+        with:
+          java-version: '25'
+          distribution: 'temurin'
+          cache: maven
+
+      - name: Compute next SNAPSHOT version
+        id: next
+        run: |
+          tag="${GITHUB_REF#refs/tags/v}"
+          IFS='.' read -r maj min pat <<< "$tag"
+          echo "version=${maj}.${min}.$((pat + 1))-SNAPSHOT" >> "$GITHUB_OUTPUT"
+
+      - name: Bump pom.xml
+        run: ./mvnw -B versions:set -DnewVersion=${{ steps.next.outputs.version }} -DgenerateBackupPoms=false
+
+      - name: Create Pull Request
+        uses: peter-evans/create-pull-request@v7
+        with:
+          commit-message: "Bump to ${{ steps.next.outputs.version }}"
+          title: "Bump to ${{ steps.next.outputs.version }}"
+          body: |
+            Automated post-release bump after `${{ github.ref_name }}`.
+          branch: "bump/${{ steps.next.outputs.version }}"
+          base: master
