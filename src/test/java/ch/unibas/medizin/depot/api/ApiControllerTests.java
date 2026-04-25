@@ -473,19 +473,6 @@ public class ApiControllerTests {
         modified = fileEntry.modified();
         assertTrue(now.minusSeconds(5).isBefore(modified));
         assertEquals(fileSize, fileEntry.size());
-
-        var logRequest = new LogRequestDto("tenant_a", "tenant_a_secret");
-        var logBody = webTestClient.post()
-                .uri("/admin/log")
-                .bodyValue(logRequest)
-                .exchange()
-                .expectStatus().isOk()
-                .expectBody(String[].class)
-                .returnResult()
-                .getResponseBody();
-        assertNotNull(logBody);
-        var findMe = Arrays.stream(logBody).filter(a -> a.contains("findMe")).findFirst().orElseThrow();
-        assertNotNull(findMe);
     }
 
     @Test

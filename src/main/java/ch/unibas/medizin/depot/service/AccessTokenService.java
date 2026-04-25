@@ -3,7 +3,6 @@ package ch.unibas.medizin.depot.service;
 import ch.unibas.medizin.depot.config.DepotProperties;
 import ch.unibas.medizin.depot.dto.AccessTokenRequestDto;
 import ch.unibas.medizin.depot.dto.AccessTokenResponseDto;
-import ch.unibas.medizin.depot.dto.QrCodePayloadDto;
 import com.auth0.jwt.JWT;
 import com.auth0.jwt.algorithms.Algorithm;
 import io.nayuki.qrcodegen.QrCode;
@@ -12,8 +11,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
-import tools.jackson.core.JacksonException;
-import tools.jackson.databind.ObjectMapper;
 
 import javax.imageio.ImageIO;
 import java.awt.image.BufferedImage;
@@ -27,8 +24,7 @@ import java.util.Locale;
 public record AccessTokenService(
         DepotProperties depotProperties,
         AuthorizationService authorizationService,
-        LogService logService,
-        ObjectMapper objectMapper
+        LogService logService
 ) {
 
     private static final Logger log = LoggerFactory.getLogger(AccessTokenService.class);
@@ -39,18 +35,12 @@ public record AccessTokenService(
     }
 
     public byte[] requestTokenQr(final AccessTokenRequestDto accessTokenRequestDto) {
-        final var host = depotProperties.getHost();
         final var token = getToken(accessTokenRequestDto);
-        final var qrCodePayload = new QrCodePayloadDto(host, token);
-
-        try {
-            final var jsonQrCodePayload = objectMapper.writeValueAsString(qrCodePayload);
-            final var qrCode = QrCode.encodeText(jsonQrCodePayload, QrCode.Ecc.LOW);
-            return toImage(qrCode);
-        } catch (JacksonException e) {
-            log.error("Could not encode payload", e);
-            throw new RuntimeException(e);
-        }
+        final var host = depotProperties.getHost();
+        final var base = host.endsWith("/") ? host.substring(0, host.length() - 1) : host;
+        final var url = base + "/#token=" + token;
+        final var qrCode = QrCode.encodeText(url, QrCode.Ecc.LOW);
+        return toImage(qrCode);
     }
 
     private byte[] toImage(QrCode qr) {
