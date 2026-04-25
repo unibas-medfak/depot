@@ -205,8 +205,15 @@ public record DepotService(
         final var tokenData = getTokenData();
         final var fullPath = tokenData.basePath().resolve(normalizedFile);
 
+        final var tenantConfig = depotProperties.getTenants().get(tokenData.tenant());
+        final var softDelete = tenantConfig != null && tenantConfig.softDelete();
+
         try {
-            FileSystemUtils.deleteRecursively(fullPath);
+            if (softDelete) {
+                softDelete(fullPath);
+            } else {
+                FileSystemUtils.deleteRecursively(fullPath);
+            }
         } catch (IOException e) {
             log.error("Could not delete file or folder", e);
             throw new RuntimeException("Could not delete file or folder.");
@@ -214,6 +221,20 @@ public record DepotService(
 
         logService.log(tokenData.tenant, LogService.EventType.DELETE, tokenData.subject(), fullPath.toString());
         log.info("{} delete {}", tokenData.subject(), fullPath);
+    }
+
+    private void softDelete(final Path fullPath) throws IOException {
+        if (!Files.exists(fullPath)) {
+            return;
+        }
+        final var parent = fullPath.getParent();
+        final var name = fullPath.getFileName().toString();
+        var target = parent.resolve("." + name);
+        var counter = 1;
+        while (Files.exists(target)) {
+            target = parent.resolve("." + name + "_" + counter++);
+        }
+        Files.move(fullPath, target, StandardCopyOption.ATOMIC_MOVE);
     }
 
     private record TokenData(String tenant, Path basePath, String subject) {

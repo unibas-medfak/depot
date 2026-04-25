@@ -6,6 +6,7 @@ depot:
   tenants:
     default:
       password: ${DEFAULT_TENANT_PASSWORD:}
+      soft-delete: false
 
 spring:
   threads:

@@ -44,7 +44,7 @@ public class DepotProperties {
     @NotEmpty
     private final Map<String, Tenant> tenants;
 
-    public record Tenant(String password) {
+    public record Tenant(String password, boolean softDelete) {
     }
 
     public DepotProperties(Path baseDirectory, String host, String timeZone, String jwtSecret, boolean backup, Map<String, Tenant> tenants) {
@@ -157,7 +157,7 @@ public class DepotProperties {
         try {
             var encodedDefaultTenantPassword = Files.readString(defaultTenantPasswordPath);
             log.info("Default tenant password read from {}", defaultTenantPasswordPath);
-            return Map.of(DEFAULT_TENANT_NAME, new Tenant(encodedDefaultTenantPassword));
+            return Map.of(DEFAULT_TENANT_NAME, new Tenant(encodedDefaultTenantPassword, false));
         } catch (IOException e) {
             log.info("No default tenant password found in {}", defaultTenantPasswordPath);
 
@@ -173,7 +173,7 @@ public class DepotProperties {
                 }
                 Files.createDirectories(baseDirectory);
                 Files.writeString(baseDirectory.resolve(defaultTenantPasswordFilename), encodedDefaultTenantPassword);
-                return Map.of(DEFAULT_TENANT_NAME, new Tenant(encodedDefaultTenantPassword));
+                return Map.of(DEFAULT_TENANT_NAME, new Tenant(encodedDefaultTenantPassword, false));
             } catch (IOException ex) {
                 log.error("Error while writing {}", defaultTenantPasswordFilename, ex);
                 throw new FatalBeanException("Failed to configure DepotProperties!");
