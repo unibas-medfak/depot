@@ -1,5 +1,5 @@
 depot:
-  base-directory: /tmp/depot
+  base-directory: /var/local/depot
   host: http://localhost:8080
   rate-limit:
     enabled: true

@@ -72,6 +72,10 @@ See Swagger UI for detailed API documentation and testing interface.
 
 Passwords are stored as bcrypt hash https://bcrypt-generator.com/
 
+## security
+
+The data directory (`depot.base-directory`) must only be writable by the user running depot. It holds the JWT secret, audit log, and tenant files — anyone who can write there can already mint admin tokens and read every tenant. Symlinks placed inside the data directory by an external process are not defended against (CWE-59); don't share the volume with less-privileged workloads.
+
 ## release
 
 Releases are tag-driven. To cut version `1.2.3`:
