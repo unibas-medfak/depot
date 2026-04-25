@@ -1,6 +1,7 @@
 package ch.unibas.medizin.depot;
 
 import ch.unibas.medizin.depot.config.DepotProperties;
+import ch.unibas.medizin.depot.config.TikaRuntimeHints;
 import io.swagger.v3.oas.annotations.OpenAPIDefinition;
 import io.swagger.v3.oas.annotations.enums.SecuritySchemeIn;
 import io.swagger.v3.oas.annotations.enums.SecuritySchemeType;
@@ -10,6 +11,7 @@ import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.boot.security.autoconfigure.UserDetailsServiceAutoConfiguration;
+import org.springframework.context.annotation.ImportRuntimeHints;
 
 import java.util.Locale;
 
@@ -17,6 +19,7 @@ import java.util.Locale;
 @SpringBootApplication(exclude = {UserDetailsServiceAutoConfiguration.class})
 @OpenAPIDefinition(info = @Info(title = "Depot API", version = "1.0", description = "Secure file storage API"))
 @SecurityScheme(name = "depotapi", scheme = "bearer", type = SecuritySchemeType.HTTP, in = SecuritySchemeIn.HEADER)
+@ImportRuntimeHints(TikaRuntimeHints.class)
 public class DepotApplication {
 
     @SuppressWarnings("UnnecessaryModifier")

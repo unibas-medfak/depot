@@ -156,6 +156,22 @@ public class ApiControllerTests {
     }
 
     @Test
+    public void Info_endpoint_is_public() {
+        var info = webTestClient.get()
+                .uri("/info")
+                .exchange()
+                .expectStatus().isOk()
+                .expectBody(InfoDto.class)
+                .returnResult()
+                .getResponseBody();
+
+        assertNotNull(info);
+        assertNotNull(info.version());
+        assertEquals("https://github.com/unibas-medfak/depot", info.github());
+        assertEquals("/swagger-ui/index.html", info.swagger());
+    }
+
+    @Test
     public void Request_token_qr() throws IOException {
         var validRegisterRequest = new AccessTokenRequestDto("tenant_a", "tenant_a_secret", "re_al-m2", "subject2", "w", LocalDate.of(2050, 12, 31).atStartOfDay(ZoneOffset.UTC).toInstant());
         var validRegisterResponse = webTestClient.post()

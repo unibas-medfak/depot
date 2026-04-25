@@ -15,3 +15,9 @@ export interface TokenInfo {
   mode: string
   exp: number
 }
+
+export interface ServiceInfo {
+  version: string
+  github: string
+  swagger: string
+}

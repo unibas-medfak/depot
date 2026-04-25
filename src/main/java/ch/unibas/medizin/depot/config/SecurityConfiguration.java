@@ -34,7 +34,7 @@ public class SecurityConfiguration {
                 .addFilterAfter(jwtAuthorizationFilter, UsernamePasswordAuthenticationFilter.class)
                 .authorizeHttpRequests(authorizeHttpRequests ->
                         authorizeHttpRequests
-                                .requestMatchers(HttpMethod.GET, "/", "/index.html", "/favicon.svg", "/assets/**", "/browse", "/browse/**", "/view/**").permitAll()
+                                .requestMatchers(HttpMethod.GET, "/", "/index.html", "/favicon.svg", "/assets/**", "/browse", "/browse/**", "/view/**", "/info").permitAll()
                                 .requestMatchers(HttpMethod.POST, "/admin/register", "/admin/qr").permitAll()
                                 .requestMatchers("/v3/api-docs/**", "/swagger-ui/**").permitAll()
                                 .anyRequest().authenticated()

@@ -4,13 +4,19 @@ import { useAuth } from './auth'
 import { Info } from './components/Info'
 import { Browser } from './components/Browser'
 import { Preview } from './components/Preview'
+import { Footer } from './components/Footer'
 import './App.css'
 
 function App() {
   const auth = useAuth()
 
   if (!auth.token || !auth.info) {
-    return <Info />
+    return (
+      <>
+        <Info />
+        <Footer />
+      </>
+    )
   }
 
   return (
@@ -37,6 +43,7 @@ function App() {
           <Route path="*" element={<Navigate to="/browse" replace />} />
         </Routes>
       </main>
+      <Footer />
     </BrowserRouter>
   )
 }
