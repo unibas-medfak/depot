@@ -91,6 +91,25 @@ public class ApiController {
         return ResponseEntity.ok(depotService.put(file, path, hash));
     }
 
+    @GetMapping("/move")
+    @PreAuthorize("hasRole('WRITE')")
+    @Operation(summary = "Move a file or folder from one path to another")
+    public ResponseEntity<Void> move(@Parameter(description = "Source path", example = "pictures/cats/cat.png") @RequestParam("fromPath") final String fromPath,
+                                     @Parameter(description = "Destination path", example = "pictures/dogs/cat.png") @RequestParam("toPath") final String toPath) {
+        if (!DepotUtil.isValidPath(fromPath)) {
+            log.error("Invalid request - move fromPath {}", fromPath);
+            throw new InvalidRequestException("fromPath", fromPath, INVALID_REQUEST_DETAIL);
+        }
+
+        if (!DepotUtil.isValidPath(toPath)) {
+            log.error("Invalid request - move toPath {}", toPath);
+            throw new InvalidRequestException("toPath", toPath, INVALID_REQUEST_DETAIL);
+        }
+
+        depotService.move(fromPath, toPath);
+        return new ResponseEntity<>(HttpStatus.OK);
+    }
+
     @GetMapping("/delete")
     @PreAuthorize("hasRole('DELETE')")
     @Operation(summary = "Delete a file or folder at the given path")

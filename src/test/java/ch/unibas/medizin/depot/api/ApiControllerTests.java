@@ -851,6 +851,249 @@ public class ApiControllerTests {
                 .expectStatus().isBadRequest();
     }
 
+    @Test
+    public void Move_file_to_new_path() throws IOException {
+        var token = freshTenant();
+
+        var file = randomFile(1024);
+        putFile(token, "/source", file);
+
+        webTestClient.get()
+                .uri("/move?fromPath=/source/" + file.getName() + "&toPath=/target/sub/moved.bin")
+                .header("Authorization", "Bearer " + token)
+                .exchange()
+                .expectStatus().isOk();
+
+        assertEquals(0, listCount(token, "/source"));
+        var targetFiles = list(token, "/target/sub");
+        assertEquals(1, targetFiles.length);
+        assertEquals("moved.bin", targetFiles[0].name());
+        assertEquals(FileDto.FileType.FILE, targetFiles[0].type());
+    }
+
+    @Test
+    public void Move_directory_to_new_path() throws IOException {
+        var token = freshTenant();
+
+        putFile(token, "/dir1", randomFile(512));
+        putFile(token, "/dir1", randomFile(512));
+
+        webTestClient.get()
+                .uri("/move?fromPath=/dir1&toPath=/dir1moved")
+                .header("Authorization", "Bearer " + token)
+                .exchange()
+                .expectStatus().isOk();
+
+        assertEquals(0, Arrays.stream(list(token, "/")).filter(f -> f.name().equals("dir1")).count());
+        assertEquals(2, listCount(token, "/dir1moved"));
+    }
+
+    @Test
+    public void Move_directory_to_new_nested_path() throws IOException {
+        var token = freshTenant();
+
+        putFile(token, "/dir1", randomFile(512));
+
+        webTestClient.get()
+                .uri("/move?fromPath=/dir1&toPath=/parent/child/dir1")
+                .header("Authorization", "Bearer " + token)
+                .exchange()
+                .expectStatus().isOk();
+
+        assertEquals(1, listCount(token, "/parent/child/dir1"));
+    }
+
+    @Test
+    public void Move_file_to_existing_file_returns_conflict() throws IOException {
+        var token = freshTenant();
+
+        var src = randomFile(256);
+        var dst = randomFile(256);
+        putFile(token, "/", src);
+        putFile(token, "/", dst);
+
+        webTestClient.get()
+                .uri("/move?fromPath=/" + src.getName() + "&toPath=/" + dst.getName())
+                .header("Authorization", "Bearer " + token)
+                .exchange()
+                .expectStatus().isEqualTo(HttpStatus.CONFLICT);
+
+        // Both files still present.
+        var names = Arrays.stream(list(token, "/")).map(FileDto::name).toList();
+        assertTrue(names.contains(src.getName()));
+        assertTrue(names.contains(dst.getName()));
+    }
+
+    @Test
+    public void Move_directory_to_existing_directory_returns_conflict() throws IOException {
+        var token = freshTenant();
+
+        putFile(token, "/folderA", randomFile(64));
+        putFile(token, "/folderB", randomFile(64));
+
+        webTestClient.get()
+                .uri("/move?fromPath=/folderA&toPath=/folderB")
+                .header("Authorization", "Bearer " + token)
+                .exchange()
+                .expectStatus().isEqualTo(HttpStatus.CONFLICT);
+
+        assertEquals(1, listCount(token, "/folderA"));
+        assertEquals(1, listCount(token, "/folderB"));
+    }
+
+    @Test
+    public void Move_file_to_existing_directory_returns_conflict() throws IOException {
+        var token = freshTenant();
+
+        var file = randomFile(64);
+        putFile(token, "/", file);
+        putFile(token, "/folder", randomFile(64));
+
+        webTestClient.get()
+                .uri("/move?fromPath=/" + file.getName() + "&toPath=/folder")
+                .header("Authorization", "Bearer " + token)
+                .exchange()
+                .expectStatus().isEqualTo(HttpStatus.CONFLICT);
+    }
+
+    @Test
+    public void Move_directory_to_existing_file_returns_conflict() throws IOException {
+        var token = freshTenant();
+
+        var file = randomFile(64);
+        putFile(token, "/", file);
+        putFile(token, "/folder", randomFile(64));
+
+        webTestClient.get()
+                .uri("/move?fromPath=/folder&toPath=/" + file.getName())
+                .header("Authorization", "Bearer " + token)
+                .exchange()
+                .expectStatus().isEqualTo(HttpStatus.CONFLICT);
+    }
+
+    @Test
+    public void Move_to_same_path_returns_conflict() throws IOException {
+        var token = freshTenant();
+
+        var file = randomFile(64);
+        putFile(token, "/", file);
+
+        webTestClient.get()
+                .uri("/move?fromPath=/" + file.getName() + "&toPath=/" + file.getName())
+                .header("Authorization", "Bearer " + token)
+                .exchange()
+                .expectStatus().isEqualTo(HttpStatus.CONFLICT);
+    }
+
+    @Test
+    public void Move_nonexistent_source_returns_not_found() {
+        var token = freshTenant();
+
+        webTestClient.get()
+                .uri("/move?fromPath=/nope/nada&toPath=/target/x")
+                .header("Authorization", "Bearer " + token)
+                .exchange()
+                .expectStatus().isNotFound();
+    }
+
+    @Test
+    public void Move_tenant_root_returns_not_found() throws IOException {
+        var token = freshTenant();
+        putFile(token, "/dir", randomFile(64));
+
+        webTestClient.get()
+                .uri("/move?fromPath=&toPath=/somewhere")
+                .header("Authorization", "Bearer " + token)
+                .exchange()
+                .expectStatus().isNotFound();
+    }
+
+    @Test
+    public void Move_invalid_paths_return_bad_request() {
+        var token = freshTenant();
+
+        webTestClient.get()
+                .uri("/move?fromPath=../../inéVäli$&toPath=/target/x")
+                .header("Authorization", "Bearer " + token)
+                .exchange()
+                .expectStatus().isBadRequest();
+
+        webTestClient.get()
+                .uri("/move?fromPath=/source&toPath=../../inéVäli$")
+                .header("Authorization", "Bearer " + token)
+                .exchange()
+                .expectStatus().isBadRequest();
+    }
+
+    @Test
+    public void Deny_read_only_move() {
+        var registerRequest = new AccessTokenRequestDto("tenant_a", "tenant_a_secret", "realm", "subject", "r", tomorrow);
+        var registerResponse = webTestClient.post()
+                .uri("/admin/register")
+                .bodyValue(registerRequest)
+                .exchange()
+                .expectStatus().isOk()
+                .expectBody(AccessTokenResponseDto.class)
+                .returnResult()
+                .getResponseBody();
+
+        assertNotNull(registerResponse);
+        var token = registerResponse.token();
+
+        webTestClient.get()
+                .uri("/move?fromPath=/a&toPath=/b")
+                .header("Authorization", "Bearer " + token)
+                .exchange()
+                .expectStatus().isUnauthorized();
+    }
+
+    private String freshTenant() {
+        try {
+            FileUtils.deleteDirectory(depotProperties.getBaseDirectory().resolve("tenant_a").resolve("realm").toFile());
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
+        var registerRequest = new AccessTokenRequestDto("tenant_a", "tenant_a_secret", "realm", "subject", "rdw", tomorrow);
+        var registerResponse = webTestClient.post()
+                .uri("/admin/register")
+                .bodyValue(registerRequest)
+                .exchange()
+                .expectStatus().isOk()
+                .expectBody(AccessTokenResponseDto.class)
+                .returnResult()
+                .getResponseBody();
+        assertNotNull(registerResponse);
+        return registerResponse.token();
+    }
+
+    private void putFile(String token, String path, File file) {
+        var bodyBuilder = new MultipartBodyBuilder();
+        bodyBuilder.part("file", new FileSystemResource(file));
+        webTestClient.post()
+                .uri("/put?path=" + path)
+                .header("Authorization", "Bearer " + token)
+                .contentType(MediaType.MULTIPART_FORM_DATA)
+                .body(BodyInserters.fromMultipartData(bodyBuilder.build()))
+                .exchange()
+                .expectStatus().isOk();
+    }
+
+    private FileDto[] list(String token, String path) {
+        var files = webTestClient.get()
+                .uri("/list?path=" + path)
+                .header("Authorization", "Bearer " + token)
+                .exchange()
+                .expectStatus().isOk()
+                .expectBody(FileDto[].class)
+                .returnResult()
+                .getResponseBody();
+        return Objects.requireNonNull(files);
+    }
+
+    private long listCount(String token, String path) {
+        return list(token, path).length;
+    }
+
     private File randomFile(int sizeInBytes) throws IOException {
         var randomFile = File.createTempFile("depot-", ".rand");
         randomFile.deleteOnExit();

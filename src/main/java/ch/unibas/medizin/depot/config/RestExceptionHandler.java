@@ -43,6 +43,14 @@ public record RestExceptionHandler() {
         return problemDetails;
     }
 
+    @ExceptionHandler(DestinationAlreadyExistsException.class)
+    public ProblemDetail handleDestinationAlreadyExistsException(final DestinationAlreadyExistsException destinationAlreadyExistsException) {
+        var problemDetails = ProblemDetail.forStatusAndDetail(HttpStatus.CONFLICT, destinationAlreadyExistsException.getLocalizedMessage());
+        problemDetails.setTitle("Destination exists");
+        problemDetails.setProperty("path", destinationAlreadyExistsException.getPath());
+        return problemDetails;
+    }
+
     @ExceptionHandler(InvalidRequestException.class)
     public ProblemDetail handleInvalidRequestException(final InvalidRequestException invalidRequestException) {
         var problemDetails = ProblemDetail.forStatusAndDetail(HttpStatus.BAD_REQUEST, invalidRequestException.getLocalizedMessage());

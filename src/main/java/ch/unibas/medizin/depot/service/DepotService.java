@@ -3,6 +3,7 @@ package ch.unibas.medizin.depot.service;
 import ch.unibas.medizin.depot.config.DepotProperties;
 import ch.unibas.medizin.depot.dto.FileDto;
 import ch.unibas.medizin.depot.dto.PutFileResponseDto;
+import ch.unibas.medizin.depot.exception.DestinationAlreadyExistsException;
 import ch.unibas.medizin.depot.exception.FileAlreadyExistsAsFolderException;
 import ch.unibas.medizin.depot.exception.FileNotFoundException;
 import ch.unibas.medizin.depot.exception.FolderAlreadyExistsAsFileException;
@@ -214,6 +215,47 @@ public record DepotService(
                 }
             }
         }
+    }
+
+    public void move(final String fromPath, final String toPath) {
+        final var tokenData = getTokenData();
+        final var basePath = tokenData.basePath().normalize().toAbsolutePath();
+        final var fullFromPath = tokenData.basePath().resolve(DepotUtil.normalizePath(fromPath)).normalize().toAbsolutePath();
+        final var fullToPath = tokenData.basePath().resolve(DepotUtil.normalizePath(toPath)).normalize().toAbsolutePath();
+
+        if (!fullFromPath.startsWith(basePath) || !fullToPath.startsWith(basePath)) {
+            log.info("Move outside base directory: from {} to {} (base {})", fullFromPath, fullToPath, basePath);
+            throw new PathNotFoundException(fromPath);
+        }
+
+        if (fullFromPath.equals(basePath) || fullToPath.equals(basePath)) {
+            log.info("Refusing to move tenant root: from {} to {}", fullFromPath, fullToPath);
+            throw new PathNotFoundException(fromPath);
+        }
+
+        if (!Files.exists(fullFromPath)) {
+            log.info("Move source not found: {}", fullFromPath);
+            throw new PathNotFoundException(fromPath);
+        }
+
+        if (Files.exists(fullToPath)) {
+            log.info("Move destination already exists: {}", fullToPath);
+            throw new DestinationAlreadyExistsException(toPath);
+        }
+
+        try {
+            final var parent = fullToPath.getParent();
+            if (parent != null) {
+                Files.createDirectories(parent);
+            }
+            Files.move(fullFromPath, fullToPath, StandardCopyOption.ATOMIC_MOVE);
+        } catch (IOException e) {
+            log.error("Could not move {} to {}", fullFromPath, fullToPath, e);
+            throw new RuntimeException("Could not move file or folder.");
+        }
+
+        logService.log(tokenData.tenant, LogService.EventType.MOVE, tokenData.subject(), fullFromPath + " -> " + fullToPath);
+        log.info("{} move {} -> {}", tokenData.subject(), fullFromPath, fullToPath);
     }
 
     public void delete(final String path) {
