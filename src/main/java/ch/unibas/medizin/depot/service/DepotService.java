@@ -137,12 +137,13 @@ public record DepotService(
     public PutFileResponseDto put(final MultipartFile file, final String path, final boolean hash) {
         final var tokenData = getTokenData();
         final var normalizedPath = DepotUtil.normalizePath(path);
+        final var basePath = tokenData.basePath().normalize().toAbsolutePath();
         final var fullPath = tokenData.basePath().resolve(normalizedPath).normalize().toAbsolutePath();
         final var fullPathAndFile = fullPath.resolve(Objects.requireNonNull(file.getOriginalFilename())).normalize().toAbsolutePath();
 
-        // Ensure the resolved file stays within the tenant/base path
-        if (!fullPathAndFile.startsWith(fullPath)) {
-            log.error("Attempt to store file outside permitted path: {}", fullPathAndFile);
+        // Ensure the resolved file stays within the tenant base
+        if (!fullPathAndFile.startsWith(basePath)) {
+            log.error("Attempt to store file outside tenant base: {}", fullPathAndFile);
             throw new IllegalArgumentException("Invalid file path");
         }
 
