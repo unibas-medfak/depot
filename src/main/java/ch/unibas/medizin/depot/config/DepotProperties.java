@@ -34,9 +34,6 @@ public class DepotProperties {
     private final String host;
 
     @NotEmpty
-    private final String timeZone;
-
-    @NotEmpty
     private final String jwtSecret;
 
     @NotEmpty
@@ -45,7 +42,7 @@ public class DepotProperties {
     public record Tenant(String password, boolean softDelete, boolean backup) {
     }
 
-    public DepotProperties(Path baseDirectory, String host, String timeZone, String jwtSecret, Map<String, Tenant> tenants) {
+    public DepotProperties(Path baseDirectory, String host, String jwtSecret, Map<String, Tenant> tenants) {
         if ("Mac OS X".equals(SystemUtils.OS_NAME)) {
             this.baseDirectory = Path.of("/tmp/depot");
         } else {
@@ -53,7 +50,6 @@ public class DepotProperties {
         }
 
         this.host = host;
-        this.timeZone = timeZone;
         this.jwtSecret = getJwtSecret(this.baseDirectory, jwtSecret);
         this.tenants = getTenants(tenants);
     }
@@ -64,10 +60,6 @@ public class DepotProperties {
 
     public Path getBaseDirectory() {
         return baseDirectory;
-    }
-
-    public String getTimeZone() {
-        return timeZone;
     }
 
     public Map<String, Tenant> getTenants() {

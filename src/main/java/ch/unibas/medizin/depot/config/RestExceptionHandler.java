@@ -4,6 +4,7 @@ import ch.unibas.medizin.depot.exception.*;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ProblemDetail;
 import org.springframework.security.access.AccessDeniedException;
+import org.springframework.security.core.AuthenticationException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
@@ -59,9 +60,16 @@ public record RestExceptionHandler() {
         return problemDetails;
     }
 
+    @ExceptionHandler(AuthenticationException.class)
+    public ProblemDetail handleAuthentication(final AuthenticationException authenticationException) {
+        var problemDetails = ProblemDetail.forStatusAndDetail(HttpStatus.UNAUTHORIZED, authenticationException.getLocalizedMessage());
+        problemDetails.setTitle("Unauthorized");
+        return problemDetails;
+    }
+
     @ExceptionHandler(AccessDeniedException.class)
     public ProblemDetail handleAccessDenied(final AccessDeniedException accessDeniedException) {
-        var problemDetails = ProblemDetail.forStatusAndDetail(HttpStatus.UNAUTHORIZED, accessDeniedException.getLocalizedMessage());
+        var problemDetails = ProblemDetail.forStatusAndDetail(HttpStatus.FORBIDDEN, accessDeniedException.getLocalizedMessage());
         problemDetails.setTitle("Access denied");
         return problemDetails;
     }

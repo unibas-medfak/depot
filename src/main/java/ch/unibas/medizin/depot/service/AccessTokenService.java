@@ -10,13 +10,11 @@ import org.jspecify.annotations.NullMarked;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
-import org.springframework.util.StringUtils;
 
 import javax.imageio.ImageIO;
 import java.awt.image.BufferedImage;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
-import java.time.ZoneId;
 import java.util.Locale;
 
 @Service
@@ -78,16 +76,13 @@ public record AccessTokenService(
         final var logString = String.format("%s %s %s %s", accessTokenRequestDto.tenant(), accessTokenRequestDto.realm(), accessTokenRequestDto.mode(), accessTokenRequestDto.expirationDate());
         logService.log(accessTokenRequestDto.tenant(), LogService.EventType.TOKEN, accessTokenRequestDto.subject(), logString);
 
-        final var zoneId = StringUtils.hasText(depotProperties.getTimeZone()) ? ZoneId.of(depotProperties.getTimeZone()) : ZoneId.systemDefault();
-        final var expirationDate = accessTokenRequestDto.expirationDate().atStartOfDay().atZone(zoneId).toInstant();
-
         return JWT.create()
                 .withIssuer("depot")
                 .withClaim("tenant", accessTokenRequestDto.tenant())
                 .withClaim("realm", accessTokenRequestDto.realm())
                 .withClaim("mode", accessTokenRequestDto.mode().toLowerCase(Locale.getDefault()))
                 .withSubject(accessTokenRequestDto.subject())
-                .withExpiresAt(expirationDate)
+                .withExpiresAt(accessTokenRequestDto.expirationDate())
                 .sign(Algorithm.HMAC256(depotProperties.getJwtSecret()));
     }
 

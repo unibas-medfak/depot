@@ -2,11 +2,12 @@ package ch.unibas.medizin.depot.api;
 
 import ch.unibas.medizin.depot.config.DepotProperties;
 import ch.unibas.medizin.depot.dto.*;
+import com.auth0.jwt.JWT;
+import com.auth0.jwt.algorithms.Algorithm;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.IOUtils;
 import org.jspecify.annotations.NullMarked;
 import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -28,8 +29,11 @@ import java.nio.file.StandardOpenOption;
 import java.time.Duration;
 import java.time.Instant;
 import java.time.LocalDate;
-import java.time.ZoneId;
+import java.time.ZoneOffset;
+import java.time.temporal.ChronoUnit;
 import java.util.Arrays;
+import java.util.Base64;
+import java.util.Map;
 import java.util.Objects;
 import java.util.Random;
 
@@ -39,9 +43,9 @@ import static org.junit.jupiter.api.Assertions.*;
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
 public class ApiControllerTests {
 
-    private final LocalDate today = LocalDate.now(ZoneId.systemDefault());
+    private final Instant today = LocalDate.now(ZoneOffset.UTC).atStartOfDay(ZoneOffset.UTC).toInstant();
 
-    private final LocalDate tomorrow = LocalDate.now(ZoneId.systemDefault()).plusDays(1);
+    private final Instant tomorrow = today.plus(1, ChronoUnit.DAYS);
 
     @Autowired
     private DepotProperties depotProperties;
@@ -73,7 +77,7 @@ public class ApiControllerTests {
 
     @Test
     public void Request_token() {
-        var validRegisterRequest = new AccessTokenRequestDto("tenant_a", "tenant_a_secret", "re_al-m1", "subject1", "r", LocalDate.of(2037, 11, 13));
+        var validRegisterRequest = new AccessTokenRequestDto("tenant_a", "tenant_a_secret", "re_al-m1", "subject1", "r", LocalDate.of(2037, 11, 13).atStartOfDay(ZoneOffset.UTC).toInstant());
         var validRegisterResponse = webTestClient.post()
                 .uri("/admin/register")
                 .bodyValue(validRegisterRequest)
@@ -89,8 +93,71 @@ public class ApiControllerTests {
     }
 
     @Test
+    public void Request_token_with_full_iso_datetime_z() {
+        assertTokenExpIsAt("2050-12-31T23:59:59Z", Instant.parse("2050-12-31T23:59:59Z").getEpochSecond());
+    }
+
+    @Test
+    public void Request_token_with_full_iso_datetime_offset() {
+        // +02:00 → instant is 21:30:00Z
+        assertTokenExpIsAt("2050-12-31T23:30:00+02:00", Instant.parse("2050-12-31T21:30:00Z").getEpochSecond());
+    }
+
+    @Test
+    public void Request_token_with_local_datetime_assumes_utc() {
+        assertTokenExpIsAt("2050-12-31T12:00:00", Instant.parse("2050-12-31T12:00:00Z").getEpochSecond());
+    }
+
+    @Test
+    public void Request_token_with_date_only_assumes_utc_start_of_day() {
+        assertTokenExpIsAt("2050-12-31", Instant.parse("2050-12-31T00:00:00Z").getEpochSecond());
+    }
+
+    @Test
+    public void Reject_invalid_expiration_format() {
+        var body = Map.of(
+                "tenant", "tenant_a",
+                "password", "tenant_a_secret",
+                "realm", "realm",
+                "subject", "subject",
+                "mode", "r",
+                "expirationDate", "not-a-date"
+        );
+        webTestClient.post()
+                .uri("/admin/register")
+                .bodyValue(body)
+                .exchange()
+                .expectStatus().is4xxClientError();
+    }
+
+    private void assertTokenExpIsAt(String expirationInput, long expectedExp) {
+        var body = Map.of(
+                "tenant", "tenant_a",
+                "password", "tenant_a_secret",
+                "realm", "realm",
+                "subject", "subject",
+                "mode", "r",
+                "expirationDate", expirationInput
+        );
+
+        var response = webTestClient.post()
+                .uri("/admin/register")
+                .bodyValue(body)
+                .exchange()
+                .expectStatus().isOk()
+                .expectBody(AccessTokenResponseDto.class)
+                .returnResult()
+                .getResponseBody();
+
+        assertNotNull(response);
+        var parts = response.token().split("\\.");
+        var payload = new String(Base64.getUrlDecoder().decode(parts[1]));
+        assertTrue(payload.contains("\"exp\":" + expectedExp), "expected exp=" + expectedExp + " in payload " + payload);
+    }
+
+    @Test
     public void Request_token_qr() throws IOException {
-        var validRegisterRequest = new AccessTokenRequestDto("tenant_a", "tenant_a_secret", "re_al-m2", "subject2", "w", LocalDate.of(2050, 12, 31));
+        var validRegisterRequest = new AccessTokenRequestDto("tenant_a", "tenant_a_secret", "re_al-m2", "subject2", "w", LocalDate.of(2050, 12, 31).atStartOfDay(ZoneOffset.UTC).toInstant());
         var validRegisterResponse = webTestClient.post()
                 .uri("/admin/qr")
                 .bodyValue(validRegisterRequest)
@@ -228,24 +295,21 @@ public class ApiControllerTests {
     }
 
     @Test
-    @Disabled
-    public void Deny_requests_from_client_with_expiration_date_of_today() {
-        var todayRegisterRequest = new AccessTokenRequestDto("tenant_a", "tenant_a_secret", "realm", "subject", "r", today);
-        var todayRegisterResponse = webTestClient.post()
-                .uri("/admin/register")
-                .bodyValue(todayRegisterRequest)
-                .exchange()
-                .expectStatus().isOk()
-                .expectBody(AccessTokenResponseDto.class)
-                .returnResult()
-                .getResponseBody();
-        assertNotNull(todayRegisterResponse);
-        var token = todayRegisterResponse.token();
+    public void Reject_expired_token() {
+        var expiredToken = JWT.create()
+                .withIssuer("depot")
+                .withClaim("tenant", "tenant_a")
+                .withClaim("realm", "realm")
+                .withClaim("mode", "r")
+                .withSubject("subject")
+                .withExpiresAt(Instant.now().minus(1, ChronoUnit.HOURS))
+                .sign(Algorithm.HMAC256(depotProperties.getJwtSecret()));
+
         webTestClient.get()
-                .uri("/list?path=///test//a")
-                .header("Authorization", "Bearer " + token)
+                .uri("/list?path=/")
+                .header("Authorization", "Bearer " + expiredToken)
                 .exchange()
-                .expectStatus().isForbidden();
+                .expectStatus().isUnauthorized();
     }
 
     @Test
@@ -503,7 +567,7 @@ public class ApiControllerTests {
                 .contentType(MediaType.MULTIPART_FORM_DATA)
                 .body(BodyInserters.fromMultipartData(bodyBuilder.build()))
                 .exchange()
-                .expectStatus().isUnauthorized();
+                .expectStatus().isForbidden();
     }
 
     @Test
@@ -655,7 +719,7 @@ public class ApiControllerTests {
                 .uri("/get?file=/test/a/denied")
                 .header("Authorization", "Bearer " + token)
                 .exchange()
-                .expectStatus().isUnauthorized();
+                .expectStatus().isForbidden();
     }
 
     @Test
@@ -706,7 +770,7 @@ public class ApiControllerTests {
                 .uri("/list?path=/")
                 .header("Authorization", "Bearer " + token)
                 .exchange()
-                .expectStatus().isUnauthorized();
+                .expectStatus().isForbidden();
     }
 
     @Test
@@ -728,7 +792,7 @@ public class ApiControllerTests {
                 .uri("/delete?path=/no.txt")
                 .header("Authorization", "Bearer " + token)
                 .exchange()
-                .expectStatus().isUnauthorized();
+                .expectStatus().isForbidden();
     }
 
     @Test
@@ -1031,7 +1095,7 @@ public class ApiControllerTests {
                 .uri("/move?fromPath=/a&toPath=/b")
                 .header("Authorization", "Bearer " + token)
                 .exchange()
-                .expectStatus().isUnauthorized();
+                .expectStatus().isForbidden();
     }
 
     private String freshTenant() {
