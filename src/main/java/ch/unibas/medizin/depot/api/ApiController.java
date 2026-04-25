@@ -54,10 +54,10 @@ public class ApiController {
         return ResponseEntity.ok(depotService.list(path, hash));
     }
 
-    @GetMapping(value = "/get", produces = MediaType.APPLICATION_OCTET_STREAM_VALUE)
+    @GetMapping("/get")
     @PreAuthorize("hasRole('READ')")
     @Operation(summary = "Retrieve a file")
-    public Resource get(@Parameter(description = "Filename and Path to be retrieved", example = "pictures/cats/cat.png") @RequestParam("file") final String file) {
+    public ResponseEntity<Resource> get(@Parameter(description = "Filename and Path to be retrieved", example = "pictures/cats/cat.png") @RequestParam("file") final String file) {
         if (!DepotUtil.isValidAbsolutPath(file)) {
             log.error("Invalid request - get file {}", file);
             throw new InvalidRequestException("file", file, INVALID_REQUEST_DETAIL);
@@ -89,6 +89,25 @@ public class ApiController {
         }
 
         return ResponseEntity.ok(depotService.put(file, path, hash));
+    }
+
+    @GetMapping("/move")
+    @PreAuthorize("hasRole('WRITE')")
+    @Operation(summary = "Move a file or folder from one path to another")
+    public ResponseEntity<Void> move(@Parameter(description = "Source path", example = "pictures/cats/cat.png") @RequestParam("fromPath") final String fromPath,
+                                     @Parameter(description = "Destination path", example = "pictures/dogs/cat.png") @RequestParam("toPath") final String toPath) {
+        if (!DepotUtil.isValidPath(fromPath)) {
+            log.error("Invalid request - move fromPath {}", fromPath);
+            throw new InvalidRequestException("fromPath", fromPath, INVALID_REQUEST_DETAIL);
+        }
+
+        if (!DepotUtil.isValidPath(toPath)) {
+            log.error("Invalid request - move toPath {}", toPath);
+            throw new InvalidRequestException("toPath", toPath, INVALID_REQUEST_DETAIL);
+        }
+
+        depotService.move(fromPath, toPath);
+        return new ResponseEntity<>(HttpStatus.OK);
     }
 
     @GetMapping("/delete")

@@ -4,7 +4,7 @@ import ch.unibas.medizin.depot.config.DepotProperties;
 import org.jspecify.annotations.NullMarked;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.security.access.AccessDeniedException;
+import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
@@ -24,17 +24,17 @@ public record AuthorizationService(
 
         if (tenant == null) {
             log.error("Request with invalid tenant");
-            throw new AccessDeniedException("Invalid credentials");
+            throw new BadCredentialsException("Invalid credentials");
         }
 
         if (!StringUtils.hasText(tenant.password())) {
             log.error("Tenant password is empty");
-            throw new AccessDeniedException("Invalid credentials");
+            throw new BadCredentialsException("Invalid credentials");
         }
 
         if (!passwordEncoder.matches(givenAdminPassword, tenant.password())) {
             log.error("Request with invalid admin password");
-            throw new AccessDeniedException("Invalid credentials");
+            throw new BadCredentialsException("Invalid credentials");
         }
     }
 

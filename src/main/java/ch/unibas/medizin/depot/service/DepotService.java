@@ -3,6 +3,7 @@ package ch.unibas.medizin.depot.service;
 import ch.unibas.medizin.depot.config.DepotProperties;
 import ch.unibas.medizin.depot.dto.FileDto;
 import ch.unibas.medizin.depot.dto.PutFileResponseDto;
+import ch.unibas.medizin.depot.exception.DestinationAlreadyExistsException;
 import ch.unibas.medizin.depot.exception.FileAlreadyExistsAsFolderException;
 import ch.unibas.medizin.depot.exception.FileNotFoundException;
 import ch.unibas.medizin.depot.exception.FolderAlreadyExistsAsFileException;
@@ -12,11 +13,14 @@ import ch.unibas.medizin.depot.util.DepotUtil;
 import jakarta.annotation.PostConstruct;
 import org.apache.commons.codec.digest.MurmurHash3;
 import org.apache.logging.log4j.util.Strings;
+import org.apache.tika.Tika;
 import org.jspecify.annotations.NullMarked;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.core.io.FileSystemResource;
 import org.springframework.core.io.Resource;
+import org.springframework.http.MediaType;
+import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import org.springframework.util.FileSystemUtils;
@@ -36,6 +40,8 @@ public record DepotService(
 ) {
 
     private static final Logger log = LoggerFactory.getLogger(DepotService.class);
+
+    private static final Tika TIKA = new Tika();
 
     @PostConstruct
     private void init() {
@@ -91,7 +97,7 @@ public record DepotService(
         return entries;
     }
 
-    public Resource get(final String file) {
+    public ResponseEntity<Resource> get(final String file) {
         final var normalizedFile = DepotUtil.normalizePath(file);
         final var tokenData = getTokenData();
         final var fullPath = tokenData.basePath().resolve(normalizedFile).normalize().toAbsolutePath();
@@ -113,11 +119,19 @@ public record DepotService(
 
         final var resource = new FileSystemResource(fullPath);
 
-        if (resource.exists() || resource.isReadable()) {
-            return resource;
-        } else {
+        if (!resource.exists() && !resource.isReadable()) {
             throw new FileNotFoundException(file);
         }
+
+        String contentType;
+        try {
+            contentType = TIKA.detect(fullPath);
+        } catch (IOException e) {
+            log.debug("Could not detect content type for {}", fullPath);
+            contentType = MediaType.APPLICATION_OCTET_STREAM_VALUE;
+        }
+
+        return ResponseEntity.ok().contentType(MediaType.parseMediaType(contentType)).body(resource);
     }
 
     public PutFileResponseDto put(final MultipartFile file, final String path, final boolean hash) {
@@ -164,7 +178,10 @@ public record DepotService(
             final var hash128 = MurmurHash3.hash128x64(Files.readAllBytes(tmpFile));
             final var hashValue = hash ? String.format("%016x%016x", hash128[0], hash128[1]) : "-";
 
-            if (depotProperties.isBackup() && Files.exists(fullPathAndFile)) {
+            final var tenantConfig = depotProperties.getTenants().get(tokenData.tenant());
+            final var backup = tenantConfig != null && tenantConfig.backup();
+
+            if (backup && Files.exists(fullPathAndFile)) {
                 final var existingHash128 = MurmurHash3.hash128x64(Files.readAllBytes(fullPathAndFile));
                 if (!Arrays.equals(hash128, existingHash128)) {
                     final var fileName = fullPathAndFile.getFileName().toString();
@@ -200,13 +217,61 @@ public record DepotService(
         }
     }
 
+    public void move(final String fromPath, final String toPath) {
+        final var tokenData = getTokenData();
+        final var basePath = tokenData.basePath().normalize().toAbsolutePath();
+        final var fullFromPath = tokenData.basePath().resolve(DepotUtil.normalizePath(fromPath)).normalize().toAbsolutePath();
+        final var fullToPath = tokenData.basePath().resolve(DepotUtil.normalizePath(toPath)).normalize().toAbsolutePath();
+
+        if (!fullFromPath.startsWith(basePath) || !fullToPath.startsWith(basePath)) {
+            log.info("Move outside base directory: from {} to {} (base {})", fullFromPath, fullToPath, basePath);
+            throw new PathNotFoundException(fromPath);
+        }
+
+        if (fullFromPath.equals(basePath) || fullToPath.equals(basePath)) {
+            log.info("Refusing to move tenant root: from {} to {}", fullFromPath, fullToPath);
+            throw new PathNotFoundException(fromPath);
+        }
+
+        if (!Files.exists(fullFromPath)) {
+            log.info("Move source not found: {}", fullFromPath);
+            throw new PathNotFoundException(fromPath);
+        }
+
+        if (Files.exists(fullToPath)) {
+            log.info("Move destination already exists: {}", fullToPath);
+            throw new DestinationAlreadyExistsException(toPath);
+        }
+
+        try {
+            final var parent = fullToPath.getParent();
+            if (parent != null) {
+                Files.createDirectories(parent);
+            }
+            Files.move(fullFromPath, fullToPath, StandardCopyOption.ATOMIC_MOVE);
+        } catch (IOException e) {
+            log.error("Could not move {} to {}", fullFromPath, fullToPath, e);
+            throw new RuntimeException("Could not move file or folder.");
+        }
+
+        logService.log(tokenData.tenant, LogService.EventType.MOVE, tokenData.subject(), fullFromPath + " -> " + fullToPath);
+        log.info("{} move {} -> {}", tokenData.subject(), fullFromPath, fullToPath);
+    }
+
     public void delete(final String path) {
         final var normalizedFile = DepotUtil.normalizePath(path);
         final var tokenData = getTokenData();
         final var fullPath = tokenData.basePath().resolve(normalizedFile);
 
+        final var tenantConfig = depotProperties.getTenants().get(tokenData.tenant());
+        final var softDelete = tenantConfig != null && tenantConfig.softDelete();
+
         try {
-            FileSystemUtils.deleteRecursively(fullPath);
+            if (softDelete) {
+                softDelete(fullPath);
+            } else {
+                FileSystemUtils.deleteRecursively(fullPath);
+            }
         } catch (IOException e) {
             log.error("Could not delete file or folder", e);
             throw new RuntimeException("Could not delete file or folder.");
@@ -214,6 +279,20 @@ public record DepotService(
 
         logService.log(tokenData.tenant, LogService.EventType.DELETE, tokenData.subject(), fullPath.toString());
         log.info("{} delete {}", tokenData.subject(), fullPath);
+    }
+
+    private void softDelete(final Path fullPath) throws IOException {
+        if (!Files.exists(fullPath)) {
+            return;
+        }
+        final var parent = fullPath.getParent();
+        final var name = fullPath.getFileName().toString();
+        var target = parent.resolve("." + name);
+        var counter = 1;
+        while (Files.exists(target)) {
+            target = parent.resolve("." + name + "_" + counter++);
+        }
+        Files.move(fullPath, target, StandardCopyOption.ATOMIC_MOVE);
     }
 
     private record TokenData(String tenant, Path basePath, String subject) {

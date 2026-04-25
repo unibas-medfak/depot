@@ -2,11 +2,12 @@ package ch.unibas.medizin.depot.api;
 
 import ch.unibas.medizin.depot.config.DepotProperties;
 import ch.unibas.medizin.depot.dto.*;
+import com.auth0.jwt.JWT;
+import com.auth0.jwt.algorithms.Algorithm;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.IOUtils;
 import org.jspecify.annotations.NullMarked;
 import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -28,8 +29,11 @@ import java.nio.file.StandardOpenOption;
 import java.time.Duration;
 import java.time.Instant;
 import java.time.LocalDate;
-import java.time.ZoneId;
+import java.time.ZoneOffset;
+import java.time.temporal.ChronoUnit;
 import java.util.Arrays;
+import java.util.Base64;
+import java.util.Map;
 import java.util.Objects;
 import java.util.Random;
 
@@ -39,9 +43,9 @@ import static org.junit.jupiter.api.Assertions.*;
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
 public class ApiControllerTests {
 
-    private final LocalDate today = LocalDate.now(ZoneId.systemDefault());
+    private final Instant today = LocalDate.now(ZoneOffset.UTC).atStartOfDay(ZoneOffset.UTC).toInstant();
 
-    private final LocalDate tomorrow = LocalDate.now(ZoneId.systemDefault()).plusDays(1);
+    private final Instant tomorrow = today.plus(1, ChronoUnit.DAYS);
 
     @Autowired
     private DepotProperties depotProperties;
@@ -73,7 +77,7 @@ public class ApiControllerTests {
 
     @Test
     public void Request_token() {
-        var validRegisterRequest = new AccessTokenRequestDto("tenant_a", "tenant_a_secret", "re_al-m1", "subject1", "r", LocalDate.of(2037, 11, 13));
+        var validRegisterRequest = new AccessTokenRequestDto("tenant_a", "tenant_a_secret", "re_al-m1", "subject1", "r", LocalDate.of(2037, 11, 13).atStartOfDay(ZoneOffset.UTC).toInstant());
         var validRegisterResponse = webTestClient.post()
                 .uri("/admin/register")
                 .bodyValue(validRegisterRequest)
@@ -89,8 +93,87 @@ public class ApiControllerTests {
     }
 
     @Test
+    public void Request_token_with_full_iso_datetime_z() {
+        assertTokenExpIsAt("2050-12-31T23:59:59Z", Instant.parse("2050-12-31T23:59:59Z").getEpochSecond());
+    }
+
+    @Test
+    public void Request_token_with_full_iso_datetime_offset() {
+        // +02:00 → instant is 21:30:00Z
+        assertTokenExpIsAt("2050-12-31T23:30:00+02:00", Instant.parse("2050-12-31T21:30:00Z").getEpochSecond());
+    }
+
+    @Test
+    public void Request_token_with_local_datetime_assumes_utc() {
+        assertTokenExpIsAt("2050-12-31T12:00:00", Instant.parse("2050-12-31T12:00:00Z").getEpochSecond());
+    }
+
+    @Test
+    public void Request_token_with_date_only_assumes_utc_start_of_day() {
+        assertTokenExpIsAt("2050-12-31", Instant.parse("2050-12-31T00:00:00Z").getEpochSecond());
+    }
+
+    @Test
+    public void Reject_invalid_expiration_format() {
+        var body = Map.of(
+                "tenant", "tenant_a",
+                "password", "tenant_a_secret",
+                "realm", "realm",
+                "subject", "subject",
+                "mode", "r",
+                "expirationDate", "not-a-date"
+        );
+        webTestClient.post()
+                .uri("/admin/register")
+                .bodyValue(body)
+                .exchange()
+                .expectStatus().is4xxClientError();
+    }
+
+    private void assertTokenExpIsAt(String expirationInput, long expectedExp) {
+        var body = Map.of(
+                "tenant", "tenant_a",
+                "password", "tenant_a_secret",
+                "realm", "realm",
+                "subject", "subject",
+                "mode", "r",
+                "expirationDate", expirationInput
+        );
+
+        var response = webTestClient.post()
+                .uri("/admin/register")
+                .bodyValue(body)
+                .exchange()
+                .expectStatus().isOk()
+                .expectBody(AccessTokenResponseDto.class)
+                .returnResult()
+                .getResponseBody();
+
+        assertNotNull(response);
+        var parts = response.token().split("\\.");
+        var payload = new String(Base64.getUrlDecoder().decode(parts[1]));
+        assertTrue(payload.contains("\"exp\":" + expectedExp), "expected exp=" + expectedExp + " in payload " + payload);
+    }
+
+    @Test
+    public void Info_endpoint_is_public() {
+        var info = webTestClient.get()
+                .uri("/info")
+                .exchange()
+                .expectStatus().isOk()
+                .expectBody(InfoDto.class)
+                .returnResult()
+                .getResponseBody();
+
+        assertNotNull(info);
+        assertNotNull(info.version());
+        assertEquals("https://github.com/unibas-medfak/depot", info.github());
+        assertEquals("/swagger-ui/index.html", info.swagger());
+    }
+
+    @Test
     public void Request_token_qr() throws IOException {
-        var validRegisterRequest = new AccessTokenRequestDto("tenant_a", "tenant_a_secret", "re_al-m2", "subject2", "w", LocalDate.of(2050, 12, 31));
+        var validRegisterRequest = new AccessTokenRequestDto("tenant_a", "tenant_a_secret", "re_al-m2", "subject2", "w", LocalDate.of(2050, 12, 31).atStartOfDay(ZoneOffset.UTC).toInstant());
         var validRegisterResponse = webTestClient.post()
                 .uri("/admin/qr")
                 .bodyValue(validRegisterRequest)
@@ -228,24 +311,21 @@ public class ApiControllerTests {
     }
 
     @Test
-    @Disabled
-    public void Deny_requests_from_client_with_expiration_date_of_today() {
-        var todayRegisterRequest = new AccessTokenRequestDto("tenant_a", "tenant_a_secret", "realm", "subject", "r", today);
-        var todayRegisterResponse = webTestClient.post()
-                .uri("/admin/register")
-                .bodyValue(todayRegisterRequest)
-                .exchange()
-                .expectStatus().isOk()
-                .expectBody(AccessTokenResponseDto.class)
-                .returnResult()
-                .getResponseBody();
-        assertNotNull(todayRegisterResponse);
-        var token = todayRegisterResponse.token();
+    public void Reject_expired_token() {
+        var expiredToken = JWT.create()
+                .withIssuer("depot")
+                .withClaim("tenant", "tenant_a")
+                .withClaim("realm", "realm")
+                .withClaim("mode", "r")
+                .withSubject("subject")
+                .withExpiresAt(Instant.now().minus(1, ChronoUnit.HOURS))
+                .sign(Algorithm.HMAC256(depotProperties.getJwtSecret()));
+
         webTestClient.get()
-                .uri("/list?path=///test//a")
-                .header("Authorization", "Bearer " + token)
+                .uri("/list?path=/")
+                .header("Authorization", "Bearer " + expiredToken)
                 .exchange()
-                .expectStatus().isForbidden();
+                .expectStatus().isUnauthorized();
     }
 
     @Test
@@ -473,19 +553,6 @@ public class ApiControllerTests {
         modified = fileEntry.modified();
         assertTrue(now.minusSeconds(5).isBefore(modified));
         assertEquals(fileSize, fileEntry.size());
-
-        var logRequest = new LogRequestDto("tenant_a", "tenant_a_secret");
-        var logBody = webTestClient.post()
-                .uri("/admin/log")
-                .bodyValue(logRequest)
-                .exchange()
-                .expectStatus().isOk()
-                .expectBody(String[].class)
-                .returnResult()
-                .getResponseBody();
-        assertNotNull(logBody);
-        var findMe = Arrays.stream(logBody).filter(a -> a.contains("findMe")).findFirst().orElseThrow();
-        assertNotNull(findMe);
     }
 
     @Test
@@ -516,7 +583,7 @@ public class ApiControllerTests {
                 .contentType(MediaType.MULTIPART_FORM_DATA)
                 .body(BodyInserters.fromMultipartData(bodyBuilder.build()))
                 .exchange()
-                .expectStatus().isUnauthorized();
+                .expectStatus().isForbidden();
     }
 
     @Test
@@ -668,7 +735,7 @@ public class ApiControllerTests {
                 .uri("/get?file=/test/a/denied")
                 .header("Authorization", "Bearer " + token)
                 .exchange()
-                .expectStatus().isUnauthorized();
+                .expectStatus().isForbidden();
     }
 
     @Test
@@ -719,7 +786,7 @@ public class ApiControllerTests {
                 .uri("/list?path=/")
                 .header("Authorization", "Bearer " + token)
                 .exchange()
-                .expectStatus().isUnauthorized();
+                .expectStatus().isForbidden();
     }
 
     @Test
@@ -741,7 +808,7 @@ public class ApiControllerTests {
                 .uri("/delete?path=/no.txt")
                 .header("Authorization", "Bearer " + token)
                 .exchange()
-                .expectStatus().isUnauthorized();
+                .expectStatus().isForbidden();
     }
 
     @Test
@@ -849,6 +916,249 @@ public class ApiControllerTests {
                 .header("Authorization", "Bearer " + token)
                 .exchange()
                 .expectStatus().isBadRequest();
+    }
+
+    @Test
+    public void Move_file_to_new_path() throws IOException {
+        var token = freshTenant();
+
+        var file = randomFile(1024);
+        putFile(token, "/source", file);
+
+        webTestClient.get()
+                .uri("/move?fromPath=/source/" + file.getName() + "&toPath=/target/sub/moved.bin")
+                .header("Authorization", "Bearer " + token)
+                .exchange()
+                .expectStatus().isOk();
+
+        assertEquals(0, listCount(token, "/source"));
+        var targetFiles = list(token, "/target/sub");
+        assertEquals(1, targetFiles.length);
+        assertEquals("moved.bin", targetFiles[0].name());
+        assertEquals(FileDto.FileType.FILE, targetFiles[0].type());
+    }
+
+    @Test
+    public void Move_directory_to_new_path() throws IOException {
+        var token = freshTenant();
+
+        putFile(token, "/dir1", randomFile(512));
+        putFile(token, "/dir1", randomFile(512));
+
+        webTestClient.get()
+                .uri("/move?fromPath=/dir1&toPath=/dir1moved")
+                .header("Authorization", "Bearer " + token)
+                .exchange()
+                .expectStatus().isOk();
+
+        assertEquals(0, Arrays.stream(list(token, "/")).filter(f -> f.name().equals("dir1")).count());
+        assertEquals(2, listCount(token, "/dir1moved"));
+    }
+
+    @Test
+    public void Move_directory_to_new_nested_path() throws IOException {
+        var token = freshTenant();
+
+        putFile(token, "/dir1", randomFile(512));
+
+        webTestClient.get()
+                .uri("/move?fromPath=/dir1&toPath=/parent/child/dir1")
+                .header("Authorization", "Bearer " + token)
+                .exchange()
+                .expectStatus().isOk();
+
+        assertEquals(1, listCount(token, "/parent/child/dir1"));
+    }
+
+    @Test
+    public void Move_file_to_existing_file_returns_conflict() throws IOException {
+        var token = freshTenant();
+
+        var src = randomFile(256);
+        var dst = randomFile(256);
+        putFile(token, "/", src);
+        putFile(token, "/", dst);
+
+        webTestClient.get()
+                .uri("/move?fromPath=/" + src.getName() + "&toPath=/" + dst.getName())
+                .header("Authorization", "Bearer " + token)
+                .exchange()
+                .expectStatus().isEqualTo(HttpStatus.CONFLICT);
+
+        // Both files still present.
+        var names = Arrays.stream(list(token, "/")).map(FileDto::name).toList();
+        assertTrue(names.contains(src.getName()));
+        assertTrue(names.contains(dst.getName()));
+    }
+
+    @Test
+    public void Move_directory_to_existing_directory_returns_conflict() throws IOException {
+        var token = freshTenant();
+
+        putFile(token, "/folderA", randomFile(64));
+        putFile(token, "/folderB", randomFile(64));
+
+        webTestClient.get()
+                .uri("/move?fromPath=/folderA&toPath=/folderB")
+                .header("Authorization", "Bearer " + token)
+                .exchange()
+                .expectStatus().isEqualTo(HttpStatus.CONFLICT);
+
+        assertEquals(1, listCount(token, "/folderA"));
+        assertEquals(1, listCount(token, "/folderB"));
+    }
+
+    @Test
+    public void Move_file_to_existing_directory_returns_conflict() throws IOException {
+        var token = freshTenant();
+
+        var file = randomFile(64);
+        putFile(token, "/", file);
+        putFile(token, "/folder", randomFile(64));
+
+        webTestClient.get()
+                .uri("/move?fromPath=/" + file.getName() + "&toPath=/folder")
+                .header("Authorization", "Bearer " + token)
+                .exchange()
+                .expectStatus().isEqualTo(HttpStatus.CONFLICT);
+    }
+
+    @Test
+    public void Move_directory_to_existing_file_returns_conflict() throws IOException {
+        var token = freshTenant();
+
+        var file = randomFile(64);
+        putFile(token, "/", file);
+        putFile(token, "/folder", randomFile(64));
+
+        webTestClient.get()
+                .uri("/move?fromPath=/folder&toPath=/" + file.getName())
+                .header("Authorization", "Bearer " + token)
+                .exchange()
+                .expectStatus().isEqualTo(HttpStatus.CONFLICT);
+    }
+
+    @Test
+    public void Move_to_same_path_returns_conflict() throws IOException {
+        var token = freshTenant();
+
+        var file = randomFile(64);
+        putFile(token, "/", file);
+
+        webTestClient.get()
+                .uri("/move?fromPath=/" + file.getName() + "&toPath=/" + file.getName())
+                .header("Authorization", "Bearer " + token)
+                .exchange()
+                .expectStatus().isEqualTo(HttpStatus.CONFLICT);
+    }
+
+    @Test
+    public void Move_nonexistent_source_returns_not_found() {
+        var token = freshTenant();
+
+        webTestClient.get()
+                .uri("/move?fromPath=/nope/nada&toPath=/target/x")
+                .header("Authorization", "Bearer " + token)
+                .exchange()
+                .expectStatus().isNotFound();
+    }
+
+    @Test
+    public void Move_tenant_root_returns_not_found() throws IOException {
+        var token = freshTenant();
+        putFile(token, "/dir", randomFile(64));
+
+        webTestClient.get()
+                .uri("/move?fromPath=&toPath=/somewhere")
+                .header("Authorization", "Bearer " + token)
+                .exchange()
+                .expectStatus().isNotFound();
+    }
+
+    @Test
+    public void Move_invalid_paths_return_bad_request() {
+        var token = freshTenant();
+
+        webTestClient.get()
+                .uri("/move?fromPath=../../inéVäli$&toPath=/target/x")
+                .header("Authorization", "Bearer " + token)
+                .exchange()
+                .expectStatus().isBadRequest();
+
+        webTestClient.get()
+                .uri("/move?fromPath=/source&toPath=../../inéVäli$")
+                .header("Authorization", "Bearer " + token)
+                .exchange()
+                .expectStatus().isBadRequest();
+    }
+
+    @Test
+    public void Deny_read_only_move() {
+        var registerRequest = new AccessTokenRequestDto("tenant_a", "tenant_a_secret", "realm", "subject", "r", tomorrow);
+        var registerResponse = webTestClient.post()
+                .uri("/admin/register")
+                .bodyValue(registerRequest)
+                .exchange()
+                .expectStatus().isOk()
+                .expectBody(AccessTokenResponseDto.class)
+                .returnResult()
+                .getResponseBody();
+
+        assertNotNull(registerResponse);
+        var token = registerResponse.token();
+
+        webTestClient.get()
+                .uri("/move?fromPath=/a&toPath=/b")
+                .header("Authorization", "Bearer " + token)
+                .exchange()
+                .expectStatus().isForbidden();
+    }
+
+    private String freshTenant() {
+        try {
+            FileUtils.deleteDirectory(depotProperties.getBaseDirectory().resolve("tenant_a").resolve("realm").toFile());
+        } catch (IOException e) {
+            throw new RuntimeException(e);
+        }
+        var registerRequest = new AccessTokenRequestDto("tenant_a", "tenant_a_secret", "realm", "subject", "rdw", tomorrow);
+        var registerResponse = webTestClient.post()
+                .uri("/admin/register")
+                .bodyValue(registerRequest)
+                .exchange()
+                .expectStatus().isOk()
+                .expectBody(AccessTokenResponseDto.class)
+                .returnResult()
+                .getResponseBody();
+        assertNotNull(registerResponse);
+        return registerResponse.token();
+    }
+
+    private void putFile(String token, String path, File file) {
+        var bodyBuilder = new MultipartBodyBuilder();
+        bodyBuilder.part("file", new FileSystemResource(file));
+        webTestClient.post()
+                .uri("/put?path=" + path)
+                .header("Authorization", "Bearer " + token)
+                .contentType(MediaType.MULTIPART_FORM_DATA)
+                .body(BodyInserters.fromMultipartData(bodyBuilder.build()))
+                .exchange()
+                .expectStatus().isOk();
+    }
+
+    private FileDto[] list(String token, String path) {
+        var files = webTestClient.get()
+                .uri("/list?path=" + path)
+                .header("Authorization", "Bearer " + token)
+                .exchange()
+                .expectStatus().isOk()
+                .expectBody(FileDto[].class)
+                .returnResult()
+                .getResponseBody();
+        return Objects.requireNonNull(files);
+    }
+
+    private long listCount(String token, String path) {
+        return list(token, path).length;
     }
 
     private File randomFile(int sizeInBytes) throws IOException {

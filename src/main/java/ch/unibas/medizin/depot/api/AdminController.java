@@ -2,10 +2,8 @@ package ch.unibas.medizin.depot.api;
 
 import ch.unibas.medizin.depot.dto.AccessTokenRequestDto;
 import ch.unibas.medizin.depot.dto.AccessTokenResponseDto;
-import ch.unibas.medizin.depot.dto.LogRequestDto;
 import ch.unibas.medizin.depot.exception.InvalidRequestException;
 import ch.unibas.medizin.depot.service.AccessTokenService;
-import ch.unibas.medizin.depot.service.AdminService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Validator;
@@ -17,8 +15,6 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
-import java.util.List;
-
 @NullMarked
 @RestController
 @RequestMapping("/admin")
@@ -27,13 +23,10 @@ public class AdminController {
 
     private final AccessTokenService accessTokenService;
 
-    private final AdminService adminService;
-
     private final Validator validator;
 
-    public AdminController(AccessTokenService accessTokenService, AdminService adminService, Validator validator) {
+    public AdminController(AccessTokenService accessTokenService, Validator validator) {
         this.accessTokenService = accessTokenService;
-        this.adminService = adminService;
         this.validator = validator;
     }
 
@@ -60,18 +53,6 @@ public class AdminController {
         }
 
         return accessTokenService.requestTokenQr(accessTokenRequestDto);
-    }
-
-    @PostMapping("/log")
-    @Operation(summary = "Retrieve the last 100 logged events")
-    public List<String> log(@RequestBody final LogRequestDto logRequestDto) {
-        final var violations = validator.validate(logRequestDto);
-
-        for (final var violation : violations) {
-            throw new InvalidRequestException(violation.getPropertyPath().toString(), violation.getInvalidValue().toString(), violation.getMessage());
-        }
-
-        return adminService.getLastLogLines(logRequestDto);
     }
 
 }

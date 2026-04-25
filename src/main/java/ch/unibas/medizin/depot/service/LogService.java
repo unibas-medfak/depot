@@ -20,7 +20,7 @@ import java.util.Map;
 public class LogService {
 
     public enum EventType {
-        TOKEN, GET, PUT, LIST, DELETE
+        TOKEN, GET, PUT, LIST, DELETE, MOVE
     }
 
     private final Map<String, Logger> loggers = new HashMap<>();
