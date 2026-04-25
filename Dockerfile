@@ -10,7 +10,7 @@ RUN ./mvnw clean install
 FROM eclipse-temurin:25-jre-noble
 WORKDIR /opt/app
 EXPOSE 8080
-COPY --from=builder /opt/app/target/*.jar /opt/app/depot.jar
+COPY --from=builder /opt/app/target/depot.jar /opt/app/depot.jar
 
 # Create application user and group
 RUN groupadd -r depot && useradd -r -g depot depot
