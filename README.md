@@ -53,6 +53,8 @@ The `expirationDate` field on admin requests accepts either an ISO date (`yyyy-M
 - `POST /admin/register` - Get JWT access token for a realm
 - `POST /admin/qr` - PNG QR code containing a direct frontend login URL (`<host>/#token=<jwt>`)
 
+Both endpoints are rate-limited per client IP (default: 5 attempts per 15 minutes; configurable via `depot.rate-limit.{enabled,max-attempts,window}`). Excess requests get `429 Too Many Requests`.
+
 ### File Operations
 - `GET /list?path=<path>` - List files/folders (requires READ role)
 - `GET /get?file=<filepath>` - Download file (requires READ role)

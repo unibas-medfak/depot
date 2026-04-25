@@ -1,6 +1,10 @@
 depot:
   base-directory: /tmp/depot
   host: http://localhost:8080
+  rate-limit:
+    enabled: true
+    max-attempts: 5
+    window: 15m
   tenants:
     default:
       password: ${DEFAULT_TENANT_PASSWORD:}

@@ -1,6 +1,7 @@
 package ch.unibas.medizin.depot;
 
 import ch.unibas.medizin.depot.config.DepotProperties;
+import ch.unibas.medizin.depot.config.RateLimitProperties;
 import ch.unibas.medizin.depot.config.TikaRuntimeHints;
 import io.swagger.v3.oas.annotations.OpenAPIDefinition;
 import io.swagger.v3.oas.annotations.enums.SecuritySchemeIn;
@@ -15,7 +16,7 @@ import org.springframework.context.annotation.ImportRuntimeHints;
 
 import java.util.Locale;
 
-@EnableConfigurationProperties(DepotProperties.class)
+@EnableConfigurationProperties({DepotProperties.class, RateLimitProperties.class})
 @SpringBootApplication(exclude = {UserDetailsServiceAutoConfiguration.class})
 @OpenAPIDefinition(info = @Info(title = "Depot API", version = "1.0", description = "Secure file storage API"))
 @SecurityScheme(name = "depotapi", scheme = "bearer", type = SecuritySchemeType.HTTP, in = SecuritySchemeIn.HEADER)
