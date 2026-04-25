@@ -39,15 +39,13 @@ public class DepotProperties {
     @NotEmpty
     private final String jwtSecret;
 
-    private final boolean backup;
-
     @NotEmpty
     private final Map<String, Tenant> tenants;
 
-    public record Tenant(String password, boolean softDelete) {
+    public record Tenant(String password, boolean softDelete, boolean backup) {
     }
 
-    public DepotProperties(Path baseDirectory, String host, String timeZone, String jwtSecret, boolean backup, Map<String, Tenant> tenants) {
+    public DepotProperties(Path baseDirectory, String host, String timeZone, String jwtSecret, Map<String, Tenant> tenants) {
         if ("Mac OS X".equals(SystemUtils.OS_NAME)) {
             this.baseDirectory = Path.of("/tmp/depot");
         } else {
@@ -57,7 +55,6 @@ public class DepotProperties {
         this.host = host;
         this.timeZone = timeZone;
         this.jwtSecret = getJwtSecret(this.baseDirectory, jwtSecret);
-        this.backup = backup;
         this.tenants = getTenants(tenants);
     }
 
@@ -79,10 +76,6 @@ public class DepotProperties {
 
     public String getJwtSecret() {
         return jwtSecret;
-    }
-
-    public boolean isBackup() {
-        return backup;
     }
 
     private String getJwtSecret(Path baseDirectory, String jwtSecretFromProperties) {
@@ -157,7 +150,7 @@ public class DepotProperties {
         try {
             var encodedDefaultTenantPassword = Files.readString(defaultTenantPasswordPath);
             log.info("Default tenant password read from {}", defaultTenantPasswordPath);
-            return Map.of(DEFAULT_TENANT_NAME, new Tenant(encodedDefaultTenantPassword, false));
+            return Map.of(DEFAULT_TENANT_NAME, new Tenant(encodedDefaultTenantPassword, false, false));
         } catch (IOException e) {
             log.info("No default tenant password found in {}", defaultTenantPasswordPath);
 
@@ -173,7 +166,7 @@ public class DepotProperties {
                 }
                 Files.createDirectories(baseDirectory);
                 Files.writeString(baseDirectory.resolve(defaultTenantPasswordFilename), encodedDefaultTenantPassword);
-                return Map.of(DEFAULT_TENANT_NAME, new Tenant(encodedDefaultTenantPassword, false));
+                return Map.of(DEFAULT_TENANT_NAME, new Tenant(encodedDefaultTenantPassword, false, false));
             } catch (IOException ex) {
                 log.error("Error while writing {}", defaultTenantPasswordFilename, ex);
                 throw new FatalBeanException("Failed to configure DepotProperties!");

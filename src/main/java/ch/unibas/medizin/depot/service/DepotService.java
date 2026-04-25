@@ -164,7 +164,10 @@ public record DepotService(
             final var hash128 = MurmurHash3.hash128x64(Files.readAllBytes(tmpFile));
             final var hashValue = hash ? String.format("%016x%016x", hash128[0], hash128[1]) : "-";
 
-            if (depotProperties.isBackup() && Files.exists(fullPathAndFile)) {
+            final var tenantConfig = depotProperties.getTenants().get(tokenData.tenant());
+            final var backup = tenantConfig != null && tenantConfig.backup();
+
+            if (backup && Files.exists(fullPathAndFile)) {
                 final var existingHash128 = MurmurHash3.hash128x64(Files.readAllBytes(fullPathAndFile));
                 if (!Arrays.equals(hash128, existingHash128)) {
                     final var fileName = fullPathAndFile.getFileName().toString();

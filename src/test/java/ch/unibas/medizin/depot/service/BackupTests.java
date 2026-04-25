@@ -16,8 +16,10 @@ import java.nio.file.Path;
 import static java.nio.charset.StandardCharsets.UTF_8;
 import static org.junit.jupiter.api.Assertions.*;
 
-@SpringBootTest(properties = "depot.backup=true")
+@SpringBootTest
 public class BackupTests {
+
+    private static final String BACKUP_USER = "tenant_b" + Character.LINE_SEPARATOR + "realm" + Character.LINE_SEPARATOR + "subject";
 
     @Autowired
     private DepotService depotService;
@@ -29,14 +31,14 @@ public class BackupTests {
 
     @BeforeEach
     void setUp() throws IOException {
-        realmPath = depotProperties.getBaseDirectory().resolve("tenant").resolve("realm").resolve("backup");
+        realmPath = depotProperties.getBaseDirectory().resolve("tenant_b").resolve("realm").resolve("backup");
         if (Files.exists(realmPath)) {
             FileSystemUtils.deleteRecursively(realmPath);
         }
     }
 
     @Test
-    @WithMockUser(username = "tenant" + Character.LINE_SEPARATOR + "realm" + Character.LINE_SEPARATOR + "subject")
+    @WithMockUser(username = BACKUP_USER)
     public void Backup_created_on_overwrite_with_different_content() {
         var file1 = new MockMultipartFile("file", "test.txt", "text/plain", "content v1".getBytes(UTF_8));
         depotService.put(file1, "backup", false);
@@ -50,7 +52,7 @@ public class BackupTests {
     }
 
     @Test
-    @WithMockUser(username = "tenant" + Character.LINE_SEPARATOR + "realm" + Character.LINE_SEPARATOR + "subject")
+    @WithMockUser(username = BACKUP_USER)
     public void No_backup_on_overwrite_with_same_content() {
         var file1 = new MockMultipartFile("file", "same.txt", "text/plain", "identical".getBytes(UTF_8));
         depotService.put(file1, "backup", false);
@@ -63,7 +65,7 @@ public class BackupTests {
     }
 
     @Test
-    @WithMockUser(username = "tenant" + Character.LINE_SEPARATOR + "realm" + Character.LINE_SEPARATOR + "subject")
+    @WithMockUser(username = BACKUP_USER)
     public void Multiple_backups_numbered_sequentially() {
         var file1 = new MockMultipartFile("file", "multi.txt", "text/plain", "v1".getBytes(UTF_8));
         depotService.put(file1, "backup", false);
@@ -81,7 +83,7 @@ public class BackupTests {
     }
 
     @Test
-    @WithMockUser(username = "tenant" + Character.LINE_SEPARATOR + "realm" + Character.LINE_SEPARATOR + "subject")
+    @WithMockUser(username = BACKUP_USER)
     public void Backup_preserves_original_content() throws IOException {
         var originalContent = "original content";
         var file1 = new MockMultipartFile("file", "preserve.txt", "text/plain", originalContent.getBytes(UTF_8));
@@ -96,7 +98,7 @@ public class BackupTests {
     }
 
     @Test
-    @WithMockUser(username = "tenant" + Character.LINE_SEPARATOR + "realm" + Character.LINE_SEPARATOR + "subject")
+    @WithMockUser(username = BACKUP_USER)
     public void No_backup_on_first_upload() {
         var file = new MockMultipartFile("file", "fresh.txt", "text/plain", "content".getBytes(UTF_8));
         depotService.put(file, "backup", false);
@@ -106,7 +108,7 @@ public class BackupTests {
     }
 
     @Test
-    @WithMockUser(username = "tenant" + Character.LINE_SEPARATOR + "realm" + Character.LINE_SEPARATOR + "subject")
+    @WithMockUser(username = BACKUP_USER)
     public void Backup_folders_not_in_list_response() {
         var file1 = new MockMultipartFile("file", "listed.txt", "text/plain", "v1".getBytes(UTF_8));
         depotService.put(file1, "backup", false);
