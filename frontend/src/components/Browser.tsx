@@ -12,11 +12,11 @@ import {
 } from 'lucide-react'
 import { listFiles } from '../api'
 import type { FileDto } from '../types'
-import { previewKind } from '../preview-kind'
+import { kindFromFilename } from '../preview-kind'
 
 function entryIcon(entry: FileDto) {
   if (entry.type === 'FOLDER') return <Folder size={18} />
-  switch (previewKind(entry.name)) {
+  switch (kindFromFilename(entry.name)) {
     case 'image':
       return <Image size={18} />
     case 'audio':
@@ -24,6 +24,7 @@ function entryIcon(entry: FileDto) {
     case 'video':
       return <Film size={18} />
     case 'text':
+    case 'pdf':
       return <FileText size={18} />
     default:
       return <File size={18} />
@@ -35,6 +36,16 @@ function formatSize(n: number) {
   if (n < 1024 * 1024) return `${(n / 1024).toFixed(1)} KB`
   if (n < 1024 * 1024 * 1024) return `${(n / 1024 / 1024).toFixed(1)} MB`
   return `${(n / 1024 / 1024 / 1024).toFixed(2)} GB`
+}
+
+const dateFormatter = new Intl.DateTimeFormat(undefined, {
+  dateStyle: 'short',
+  timeStyle: 'short',
+})
+
+function formatDate(iso: string) {
+  const d = new Date(iso)
+  return Number.isNaN(d.getTime()) ? '' : dateFormatter.format(d)
 }
 
 function sortEntries(entries: FileDto[]): FileDto[] {
@@ -107,6 +118,7 @@ export function Browser() {
                 <Link to={to} className="entry">
                   <span className="entry-icon">{entryIcon(e)}</span>
                   <span className="entry-name">{e.name}</span>
+                  <span className="entry-modified">{formatDate(e.modified)}</span>
                   <span className="entry-size">
                     {e.type === 'FILE' ? formatSize(e.size) : ''}
                   </span>

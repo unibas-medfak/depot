@@ -1,4 +1,24 @@
-export type PreviewKind = 'image' | 'audio' | 'video' | 'text' | 'binary'
+export type PreviewKind = 'image' | 'audio' | 'video' | 'text' | 'pdf' | 'binary'
+
+const TEXT_APPLICATION_TYPES = new Set([
+  'application/json',
+  'application/xml',
+  'application/yaml',
+  'application/x-yaml',
+  'application/javascript',
+  'application/x-sh',
+])
+
+export function kindFromMimeType(mimeType: string): PreviewKind {
+  const type = mimeType.split(';', 1)[0].trim().toLowerCase()
+  if (type.startsWith('image/')) return 'image'
+  if (type.startsWith('audio/')) return 'audio'
+  if (type.startsWith('video/')) return 'video'
+  if (type.startsWith('text/')) return 'text'
+  if (type === 'application/pdf') return 'pdf'
+  if (TEXT_APPLICATION_TYPES.has(type)) return 'text'
+  return 'binary'
+}
 
 const EXT_TO_KIND: Record<string, PreviewKind> = {
   png: 'image',
@@ -22,6 +42,8 @@ const EXT_TO_KIND: Record<string, PreviewKind> = {
   mov: 'video',
   mkv: 'video',
 
+  pdf: 'pdf',
+
   txt: 'text',
   md: 'text',
   json: 'text',
@@ -38,7 +60,7 @@ const EXT_TO_KIND: Record<string, PreviewKind> = {
   ts: 'text',
 }
 
-export function previewKind(filename: string): PreviewKind {
+export function kindFromFilename(filename: string): PreviewKind {
   const dot = filename.lastIndexOf('.')
   if (dot < 0) return 'binary'
   const ext = filename.slice(dot + 1).toLowerCase()

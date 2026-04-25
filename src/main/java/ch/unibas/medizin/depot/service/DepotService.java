@@ -12,11 +12,14 @@ import ch.unibas.medizin.depot.util.DepotUtil;
 import jakarta.annotation.PostConstruct;
 import org.apache.commons.codec.digest.MurmurHash3;
 import org.apache.logging.log4j.util.Strings;
+import org.apache.tika.Tika;
 import org.jspecify.annotations.NullMarked;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.core.io.FileSystemResource;
 import org.springframework.core.io.Resource;
+import org.springframework.http.MediaType;
+import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import org.springframework.util.FileSystemUtils;
@@ -36,6 +39,8 @@ public record DepotService(
 ) {
 
     private static final Logger log = LoggerFactory.getLogger(DepotService.class);
+
+    private static final Tika TIKA = new Tika();
 
     @PostConstruct
     private void init() {
@@ -91,7 +96,7 @@ public record DepotService(
         return entries;
     }
 
-    public Resource get(final String file) {
+    public ResponseEntity<Resource> get(final String file) {
         final var normalizedFile = DepotUtil.normalizePath(file);
         final var tokenData = getTokenData();
         final var fullPath = tokenData.basePath().resolve(normalizedFile).normalize().toAbsolutePath();
@@ -113,11 +118,19 @@ public record DepotService(
 
         final var resource = new FileSystemResource(fullPath);
 
-        if (resource.exists() || resource.isReadable()) {
-            return resource;
-        } else {
+        if (!resource.exists() && !resource.isReadable()) {
             throw new FileNotFoundException(file);
         }
+
+        String contentType;
+        try {
+            contentType = TIKA.detect(fullPath);
+        } catch (IOException e) {
+            log.debug("Could not detect content type for {}", fullPath);
+            contentType = MediaType.APPLICATION_OCTET_STREAM_VALUE;
+        }
+
+        return ResponseEntity.ok().contentType(MediaType.parseMediaType(contentType)).body(resource);
     }
 
     public PutFileResponseDto put(final MultipartFile file, final String path, final boolean hash) {

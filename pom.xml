@@ -75,6 +75,11 @@
 			<version>3.20.0</version>
 		</dependency>
 		<dependency>
+			<groupId>org.apache.tika</groupId>
+			<artifactId>tika-core</artifactId>
+			<version>3.3.0</version>
+		</dependency>
+		<dependency>
 			<groupId>org.jspecify</groupId>
 			<artifactId>jspecify</artifactId>
 			<version>1.0.0</version>

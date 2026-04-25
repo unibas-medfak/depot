@@ -2,17 +2,17 @@ import { useEffect, useState } from 'react'
 import { Link, useParams } from 'react-router-dom'
 import { ArrowLeft, Download } from 'lucide-react'
 import { getFileBlob } from '../api'
-import { previewKind } from '../preview-kind'
+import { kindFromMimeType, type PreviewKind } from '../preview-kind'
 
 export function Preview() {
   const params = useParams()
   const path = params['*'] ?? ''
   const [url, setUrl] = useState<string | null>(null)
   const [text, setText] = useState<string | null>(null)
+  const [kind, setKind] = useState<PreviewKind | null>(null)
   const [error, setError] = useState<string | null>(null)
 
   const name = path.split('/').pop() ?? path
-  const kind = previewKind(name)
   const parentPath = path.includes('/')
     ? path.slice(0, path.lastIndexOf('/'))
     : ''
@@ -23,19 +23,23 @@ export function Preview() {
     let cancelled = false
     setUrl(null)
     setText(null)
+    setKind(null)
     setError(null)
 
     getFileBlob(path)
       .then(async (blob) => {
         if (cancelled) return
-        if (kind === 'text') {
+        const detected = kindFromMimeType(blob.type)
+        if (detected === 'text') {
           const content = await blob.text()
           if (cancelled) return
           setText(content)
         }
         const objectUrl = URL.createObjectURL(blob)
         revokeUrl = objectUrl
-        if (!cancelled) setUrl(objectUrl)
+        if (cancelled) return
+        setKind(detected)
+        setUrl(objectUrl)
       })
       .catch((e: Error) => {
         if (!cancelled) setError(e.message)
@@ -45,7 +49,7 @@ export function Preview() {
       cancelled = true
       if (revokeUrl) URL.revokeObjectURL(revokeUrl)
     }
-  }, [path, kind])
+  }, [path])
 
   return (
     <div className="preview">
@@ -73,6 +77,9 @@ export function Preview() {
         )}
         {url && kind === 'video' && (
           <video controls src={url} className="preview-video" />
+        )}
+        {url && kind === 'pdf' && (
+          <iframe src={url} title={name} className="preview-pdf" />
         )}
         {text !== null && <pre className="preview-text">{text}</pre>}
         {url && kind === 'binary' && (

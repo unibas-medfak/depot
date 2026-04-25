@@ -54,10 +54,10 @@ public class ApiController {
         return ResponseEntity.ok(depotService.list(path, hash));
     }
 
-    @GetMapping(value = "/get", produces = MediaType.APPLICATION_OCTET_STREAM_VALUE)
+    @GetMapping("/get")
     @PreAuthorize("hasRole('READ')")
     @Operation(summary = "Retrieve a file")
-    public Resource get(@Parameter(description = "Filename and Path to be retrieved", example = "pictures/cats/cat.png") @RequestParam("file") final String file) {
+    public ResponseEntity<Resource> get(@Parameter(description = "Filename and Path to be retrieved", example = "pictures/cats/cat.png") @RequestParam("file") final String file) {
         if (!DepotUtil.isValidAbsolutPath(file)) {
             log.error("Invalid request - get file {}", file);
             throw new InvalidRequestException("file", file, INVALID_REQUEST_DETAIL);
