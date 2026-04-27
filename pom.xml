@@ -19,7 +19,7 @@
 		<json-path.version>2.9.0</json-path.version>
 		<frontend.skip>false</frontend.skip>
 		<node.version>v22.13.0</node.version>
-		<frontend-maven-plugin.version>1.15.1</frontend-maven-plugin.version>
+		<frontend-maven-plugin.version>2.0.0</frontend-maven-plugin.version>
 	</properties>
 
 	<dependencies>
