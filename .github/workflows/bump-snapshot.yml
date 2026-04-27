@@ -35,7 +35,7 @@ jobs:
         run: ./mvnw -B versions:set -DnewVersion=${{ steps.next.outputs.version }} -DgenerateBackupPoms=false
 
       - name: Create Pull Request
-        uses: peter-evans/create-pull-request@v7
+        uses: peter-evans/create-pull-request@v8
         with:
           commit-message: "Bump to ${{ steps.next.outputs.version }}"
           title: "Bump to ${{ steps.next.outputs.version }}"
