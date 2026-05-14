@@ -7,6 +7,7 @@
 #   ./getToken.sh                  Print the JWT
 #   ./getToken.sh --link           Print a browse URL with #token=... at /
 #   ./getToken.sh --link /path     Print a browse URL with #token=... at /path
+#   ./getToken.sh --qr > qr.png    Write a QR code PNG (encodes the browse URL) to stdout
 #
 # Override defaults with env vars:
 #   HOST, TENANT, REALM, SUBJECT, MODE, EXPIRATION_DATE
@@ -14,6 +15,10 @@
 set -eu
 
 HOST="${HOST:-http://localhost:8080}"
+case "$HOST" in
+    http://*|https://*) ;;
+    *) HOST="https://$HOST" ;;
+esac
 TENANT="${TENANT:-default}"
 REALM="${REALM:-test}"
 SUBJECT="${SUBJECT:-reader}"
@@ -22,6 +27,7 @@ EXPIRATION_DATE="${EXPIRATION_DATE:-$(date -v+30d +%Y-%m-%d 2>/dev/null || date 
 
 link_mode=false
 link_path="/"
+qr_mode=false
 
 while [ $# -gt 0 ]; do
     case "$1" in
@@ -33,8 +39,12 @@ while [ $# -gt 0 ]; do
                 shift
             fi
             ;;
+        --qr)
+            qr_mode=true
+            shift
+            ;;
         -h|--help)
-            sed -n '2,11p' "$0" | sed 's/^# \{0,1\}//'
+            sed -n '2,12p' "$0" | sed 's/^# \{0,1\}//'
             exit 0
             ;;
         *)
@@ -43,6 +53,11 @@ while [ $# -gt 0 ]; do
             ;;
     esac
 done
+
+if [ "$qr_mode" = true ] && [ "$link_mode" = true ]; then
+    printf '--qr and --link are mutually exclusive\n' >&2
+    exit 2
+fi
 
 case "$link_path" in
     /*) ;;
@@ -68,6 +83,23 @@ body=$(printf '{"tenant":"%s","password":"%s","realm":"%s","subject":"%s","mode"
     "$(escape_json "$SUBJECT")" \
     "$(escape_json "$MODE")" \
     "$(escape_json "$EXPIRATION_DATE")")
+
+if [ "$qr_mode" = true ]; then
+    tmp=$(mktemp)
+    trap 'stty echo 2>/dev/null || true; rm -f "$tmp"' EXIT
+    http_status=$(curl -sS -o "$tmp" -w '%{http_code}' -X POST "$HOST/admin/qr" \
+        -H 'Content-Type: application/json' \
+        -H 'Accept: image/png' \
+        -d "$body")
+    if [ "$http_status" != "200" ]; then
+        printf 'Failed to obtain QR (HTTP %s). Response:\n' "$http_status" >&2
+        cat "$tmp" >&2
+        printf '\n' >&2
+        exit 1
+    fi
+    cat "$tmp"
+    exit 0
+fi
 
 response=$(curl -sS -X POST "$HOST/admin/register" \
     -H 'Content-Type: application/json' \
