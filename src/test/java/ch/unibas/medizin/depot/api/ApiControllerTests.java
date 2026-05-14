@@ -24,6 +24,7 @@ import java.io.BufferedOutputStream;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.StandardOpenOption;
 import java.time.Duration;
@@ -150,8 +151,8 @@ public class ApiControllerTests {
                 .getResponseBody();
 
         assertNotNull(response);
-        var parts = response.token().split("\\.");
-        var payload = new String(Base64.getUrlDecoder().decode(parts[1]));
+        var parts = response.token().split("\\.", -1);
+        var payload = new String(Base64.getUrlDecoder().decode(parts[1]), StandardCharsets.UTF_8);
         assertTrue(payload.contains("\"exp\":" + expectedExp), "expected exp=" + expectedExp + " in payload " + payload);
     }
 

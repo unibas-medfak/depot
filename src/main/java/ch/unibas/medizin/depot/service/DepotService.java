@@ -287,6 +287,9 @@ public record DepotService(
             return;
         }
         final var parent = fullPath.getParent();
+        if (parent == null) {
+            return;
+        }
         final var name = fullPath.getFileName().toString();
         var target = parent.resolve("." + name);
         var counter = 1;
