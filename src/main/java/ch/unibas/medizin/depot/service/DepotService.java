@@ -176,11 +176,14 @@ public record DepotService(
 
             final var bytes = Files.copy(file.getInputStream(), tmpFile, options);
 
-            final var hash128 = MurmurHash3.hash128x64(Files.readAllBytes(tmpFile));
-            final var hashValue = hash ? String.format("%016x%016x", hash128[0], hash128[1]) : "-";
-
             final var tenantConfig = depotProperties.getTenants().get(tokenData.tenant());
             final var backup = tenantConfig != null && tenantConfig.backup();
+
+            // Only read the file back and hash it when the result is actually needed:
+            // either the caller requested a hash, or a backup overwrite has to compare content.
+            final var needHash = hash || (backup && Files.exists(fullPathAndFile));
+            final long[] hash128 = needHash ? MurmurHash3.hash128x64(Files.readAllBytes(tmpFile)) : null;
+            final var hashValue = hash ? String.format("%016x%016x", hash128[0], hash128[1]) : "-";
 
             if (backup && Files.exists(fullPathAndFile)) {
                 final var existingHash128 = MurmurHash3.hash128x64(Files.readAllBytes(fullPathAndFile));

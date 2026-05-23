@@ -4,11 +4,18 @@ import org.jspecify.annotations.NullMarked;
 
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.regex.Pattern;
 
 @NullMarked
 public interface DepotUtil {
 
     String LOGFILE_NAME = "depot-access.log";
+
+    Pattern SLASH_DOT = Pattern.compile("/[.]");
+    Pattern DOT_SLASH = Pattern.compile("[.]/");
+    Pattern MULTIPLE_SLASHES = Pattern.compile("/+");
+    Pattern LEADING_SLASH = Pattern.compile("^/");
+    Pattern TRAILING_SLASH = Pattern.compile("/$");
 
     static Path normalizePath(final String path) {
         var normalizedPath = path.replace(" ", "");
@@ -16,19 +23,18 @@ public interface DepotUtil {
         var changed = true;
 
         while (changed) {
-            var after = normalizedPath.replaceAll("/[.]", "/").replaceAll("[.]/", "/");
+            var after = DOT_SLASH.matcher(SLASH_DOT.matcher(normalizedPath).replaceAll("/")).replaceAll("/");
             if (normalizedPath.equals(after)) {
                 changed = false;
             }
             normalizedPath = after;
         }
 
-        return Paths.get(
-                normalizedPath
-                        .replaceAll("/+", "/")
-                        .replaceAll("^/", "")
-                        .replaceAll("/$", "")
-        );
+        normalizedPath = MULTIPLE_SLASHES.matcher(normalizedPath).replaceAll("/");
+        normalizedPath = LEADING_SLASH.matcher(normalizedPath).replaceAll("");
+        normalizedPath = TRAILING_SLASH.matcher(normalizedPath).replaceAll("");
+
+        return Paths.get(normalizedPath);
     }
 
     static boolean isValidAbsolutPath(final String candidate) {
