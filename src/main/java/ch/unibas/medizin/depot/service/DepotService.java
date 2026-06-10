@@ -291,7 +291,7 @@ public record DepotService(
         }
         final var parent = fullPath.getParent();
         if (parent == null) {
-            return;
+            throw new IOException("Cannot soft delete root path: " + fullPath);
         }
         final var name = fullPath.getFileName().toString();
         var target = parent.resolve("." + name);
