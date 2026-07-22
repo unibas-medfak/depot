@@ -327,6 +327,34 @@ public class ApiControllerTests {
     }
 
     @Test
+    public void Deny_register_with_traversal_realm() {
+        var traversalRegisterRequest = new AccessTokenRequestDto("tenant_a", "tenant_a_secret", "..", "subject", "r", tomorrow);
+        webTestClient.post()
+                .uri("/admin/register")
+                .bodyValue(traversalRegisterRequest)
+                .exchange()
+                .expectStatus().isBadRequest();
+    }
+
+    @Test
+    public void Reject_token_with_traversal_realm() {
+        var traversalToken = JWT.create()
+                .withIssuer("depot")
+                .withClaim("tenant", "tenant_a")
+                .withClaim("realm", "..")
+                .withClaim("mode", "rwd")
+                .withSubject("subject")
+                .withExpiresAt(tomorrow)
+                .sign(Algorithm.HMAC256(depotProperties.getJwtSecret()));
+
+        webTestClient.get()
+                .uri("/list?path=/")
+                .header("Authorization", "Bearer " + traversalToken)
+                .exchange()
+                .expectStatus().isForbidden();
+    }
+
+    @Test
     public void Deny_file_with_invalid_name() throws IOException {
         FileUtils.deleteDirectory(depotProperties.getBaseDirectory().resolve("tenant_a").resolve("realm").toFile());
 

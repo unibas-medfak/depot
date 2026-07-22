@@ -26,6 +26,15 @@ public class DepotUtilTests {
     }
 
     @Test
+    void dotTenantOrRealmRejected() {
+        assertFalse(DepotUtil.isValidTenantOrRealm("."));
+        assertFalse(DepotUtil.isValidTenantOrRealm(".."));
+        assertFalse(DepotUtil.isValidTenantOrRealm("..."));
+        assertFalse(DepotUtil.isValidTenantOrRealm(".hidden"));
+        assertTrue(DepotUtil.isValidTenantOrRealm("realm.with.dots"));
+    }
+
+    @Test
     void validFilename() {
         assertTrue(DepotUtil.isValidFilename("1abc.-@_.txt"));
         assertFalse(DepotUtil.isValidFilename("1abc.-!@_.txt"));

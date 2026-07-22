@@ -51,7 +51,7 @@ public interface DepotUtil {
     }
 
     static boolean isValidTenantOrRealm(final String candidate) {
-        return isValid(candidate, false);
+        return !candidate.startsWith(".") && isValid(candidate, false);
     }
 
     static boolean isValidFilename(final String candidate) {

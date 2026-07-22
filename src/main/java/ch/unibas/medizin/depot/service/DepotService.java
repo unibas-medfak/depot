@@ -21,6 +21,7 @@ import org.springframework.core.io.FileSystemResource;
 import org.springframework.core.io.Resource;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import org.springframework.util.FileSystemUtils;
@@ -320,10 +321,16 @@ public record DepotService(
         if (!StringUtils.hasText(tenant)) {
             throw new IllegalStateException("Empty tenant");
         }
+        if (!DepotUtil.isValidTenantOrRealm(tenant)) {
+            throw new AccessDeniedException("Illegal tenant");
+        }
 
         final var realm = tenantRealmAndSubject.get(1);
         if (!StringUtils.hasText(realm)) {
             throw new IllegalStateException("Empty realm");
+        }
+        if (!DepotUtil.isValidTenantOrRealm(realm)) {
+            throw new AccessDeniedException("Illegal realm");
         }
 
         final var subject = tenantRealmAndSubject.get(2);
