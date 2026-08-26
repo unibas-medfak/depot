@@ -293,6 +293,38 @@ public class ApiControllerTests {
     }
 
     @Test
+    public void Deny_client_with_null_mode() {
+        // A @NotBlank violation on an absent field has a null invalid value, which must still be
+        // reportable as a 400 rather than blowing up while building the problem detail.
+        var invalidRegisterRequest = new AccessTokenRequestDto("tenant_a", "tenant_a_secret", "realm", "subject", null, tomorrow);
+        webTestClient.post()
+                .uri("/admin/register")
+                .bodyValue(invalidRegisterRequest)
+                .exchange()
+                .expectStatus().isBadRequest();
+    }
+
+    @Test
+    public void Deny_client_with_null_expiration_date() {
+        var invalidRegisterRequest = new AccessTokenRequestDto("tenant_a", "tenant_a_secret", "realm", "subject", "r", null);
+        webTestClient.post()
+                .uri("/admin/register")
+                .bodyValue(invalidRegisterRequest)
+                .exchange()
+                .expectStatus().isBadRequest();
+    }
+
+    @Test
+    public void Deny_qr_with_null_mode() {
+        var invalidRegisterRequest = new AccessTokenRequestDto("tenant_a", "tenant_a_secret", "realm", "subject", null, tomorrow);
+        webTestClient.post()
+                .uri("/admin/qr")
+                .bodyValue(invalidRegisterRequest)
+                .exchange()
+                .expectStatus().isBadRequest();
+    }
+
+    @Test
     public void Deny_client_with_invalid_admin_password() {
         var invalidRegisterRequest = new AccessTokenRequestDto("tenant_a", "wrong_password", "realm", "subject", "r", tomorrow);
         webTestClient.post()

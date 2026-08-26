@@ -33,11 +33,7 @@ public class AdminController {
     @PostMapping("/register")
     @Operation(summary = "Retrieve a token which provides access to the given realm")
     public ResponseEntity<AccessTokenResponseDto> register(@RequestBody final AccessTokenRequestDto accessTokenRequestDto) {
-        final var violations = validator.validate(accessTokenRequestDto);
-
-        for (var violation : violations) {
-            throw new InvalidRequestException(violation.getPropertyPath().toString(), violation.getInvalidValue().toString(), violation.getMessage());
-        }
+        throwIfInvalid(accessTokenRequestDto);
 
         final var accessTokenResponseDto = accessTokenService.requestTokenString(accessTokenRequestDto);
         return ResponseEntity.ok(accessTokenResponseDto);
@@ -46,13 +42,20 @@ public class AdminController {
     @PostMapping(value = "/qr", produces = MediaType.IMAGE_PNG_VALUE)
     @Operation(summary = "Retrieve a QR code which provides access to the given realm")
     public byte[] qr(@RequestBody final AccessTokenRequestDto accessTokenRequestDto) {
-        final var violations = validator.validate(accessTokenRequestDto);
-
-        for (final var violation : violations) {
-            throw new InvalidRequestException(violation.getPropertyPath().toString(), violation.getInvalidValue().toString(), violation.getMessage());
-        }
+        throwIfInvalid(accessTokenRequestDto);
 
         return accessTokenService.requestTokenQr(accessTokenRequestDto);
+    }
+
+    private void throwIfInvalid(final AccessTokenRequestDto accessTokenRequestDto) {
+        for (final var violation : validator.validate(accessTokenRequestDto)) {
+            // String.valueOf keeps a missing field reportable as "null" instead of throwing:
+            // getInvalidValue() is null for a @NotNull or @NotBlank violation on an absent field.
+            throw new InvalidRequestException(
+                    violation.getPropertyPath().toString(),
+                    String.valueOf(violation.getInvalidValue()),
+                    violation.getMessage());
+        }
     }
 
 }
