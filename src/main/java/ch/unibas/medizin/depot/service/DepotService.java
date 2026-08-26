@@ -180,25 +180,32 @@ public record DepotService(
             final var tenantConfig = depotProperties.getTenants().get(tokenData.tenant());
             final var backup = tenantConfig != null && tenantConfig.backup();
 
+            final var backupExisting = backup && Files.exists(fullPathAndFile);
+
             // Only read the file back and hash it when the result is actually needed:
             // either the caller requested a hash, or a backup overwrite has to compare content.
-            final var needHash = hash || (backup && Files.exists(fullPathAndFile));
-            final long[] hash128 = needHash ? MurmurHash3.hash128x64(Files.readAllBytes(tmpFile)) : null;
-            final var hashValue = hash ? String.format("%016x%016x", hash128[0], hash128[1]) : "-";
+            var hashValue = "-";
+            if (hash || backupExisting) {
+                final var hash128 = MurmurHash3.hash128x64(Files.readAllBytes(tmpFile));
 
-            if (backup && Files.exists(fullPathAndFile)) {
-                final var existingHash128 = MurmurHash3.hash128x64(Files.readAllBytes(fullPathAndFile));
-                if (!Arrays.equals(hash128, existingHash128)) {
-                    final var fileName = fullPathAndFile.getFileName().toString();
-                    final var backupDir = fullPath.resolve("." + fileName);
-                    Files.createDirectories(backupDir);
-                    final long existingBackups;
-                    try (var backups = Files.list(backupDir)) {
-                        existingBackups = backups.count();
+                if (hash) {
+                    hashValue = String.format("%016x%016x", hash128[0], hash128[1]);
+                }
+
+                if (backupExisting) {
+                    final var existingHash128 = MurmurHash3.hash128x64(Files.readAllBytes(fullPathAndFile));
+                    if (!Arrays.equals(hash128, existingHash128)) {
+                        final var fileName = fullPathAndFile.getFileName().toString();
+                        final var backupDir = fullPath.resolve("." + fileName);
+                        Files.createDirectories(backupDir);
+                        final long existingBackups;
+                        try (var backups = Files.list(backupDir)) {
+                            existingBackups = backups.count();
+                        }
+                        final var backupFile = backupDir.resolve(fileName + "_" + (existingBackups + 1));
+                        Files.move(fullPathAndFile, backupFile, StandardCopyOption.ATOMIC_MOVE);
+                        log.info("Backed up {} to {}", fullPathAndFile, backupFile);
                     }
-                    final var backupFile = backupDir.resolve(fileName + "_" + (existingBackups + 1));
-                    Files.move(fullPathAndFile, backupFile, StandardCopyOption.ATOMIC_MOVE);
-                    log.info("Backed up {} to {}", fullPathAndFile, backupFile);
                 }
             }
 
