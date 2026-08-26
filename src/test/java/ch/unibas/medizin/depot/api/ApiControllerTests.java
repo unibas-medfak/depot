@@ -2,6 +2,7 @@ package ch.unibas.medizin.depot.api;
 
 import ch.unibas.medizin.depot.config.DepotProperties;
 import ch.unibas.medizin.depot.dto.*;
+import ch.unibas.medizin.depot.util.DepotUtil;
 import com.auth0.jwt.JWT;
 import com.auth0.jwt.algorithms.Algorithm;
 import org.apache.commons.io.FileUtils;
@@ -1144,6 +1145,66 @@ public class ApiControllerTests {
                 .header("Authorization", "Bearer " + token)
                 .exchange()
                 .expectStatus().isForbidden();
+    }
+
+    @Test
+    public void Realm_containing_delimiter_stays_usable() {
+        // JWTAuthorizationFilter.TOKEN_DATA_DELIMITER is meant to be a single character that
+        // cannot occur in a tenant, realm or subject. Character.LINE_SEPARATOR is the Unicode
+        // general-category constant (a byte with value 13), so the delimiter is the two-character
+        // string "13" and any realm containing "13" breaks the security context parse.
+        var registerRequest = new AccessTokenRequestDto("tenant_a", "tenant_a_secret", "exam13", "subject", "rw", tomorrow);
+        var registerResponse = webTestClient.post()
+                .uri("/admin/register")
+                .bodyValue(registerRequest)
+                .exchange()
+                .expectStatus().isOk()
+                .expectBody(AccessTokenResponseDto.class)
+                .returnResult()
+                .getResponseBody();
+
+        assertNotNull(registerResponse);
+        var token = registerResponse.token();
+
+        webTestClient.get()
+                .uri("/list?path=")
+                .header("Authorization", "Bearer " + token)
+                .exchange()
+                .expectStatus().isOk();
+    }
+
+    @Test
+    public void Subject_containing_delimiter_is_logged_verbatim() throws IOException {
+        // Same root cause as above, but silent: a subject ending in the delimiter still splits
+        // into three parts, so the request succeeds and the truncated subject reaches the audit log.
+        var subject = "iPad #213";
+        var registerRequest = new AccessTokenRequestDto("tenant_a", "tenant_a_secret", "delimiterrealm", subject, "rw", tomorrow);
+        var registerResponse = webTestClient.post()
+                .uri("/admin/register")
+                .bodyValue(registerRequest)
+                .exchange()
+                .expectStatus().isOk()
+                .expectBody(AccessTokenResponseDto.class)
+                .returnResult()
+                .getResponseBody();
+
+        assertNotNull(registerResponse);
+        var token = registerResponse.token();
+
+        webTestClient.get()
+                .uri("/list?path=")
+                .header("Authorization", "Bearer " + token)
+                .exchange()
+                .expectStatus().isOk();
+
+        var logFile = depotProperties.getBaseDirectory().resolve("tenant_a").resolve(DepotUtil.LOGFILE_NAME);
+        var logLines = Files.readAllLines(logFile);
+        var listEntry = logLines.stream()
+                .filter(line -> line.contains("LIST") && line.endsWith("delimiterrealm"))
+                .reduce((first, second) -> second)
+                .orElseThrow();
+
+        assertTrue(listEntry.contains("LIST " + subject + " "), "audit log lost part of the subject: " + listEntry);
     }
 
     private String freshTenant() {

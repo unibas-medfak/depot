@@ -29,7 +29,9 @@ public class JWTAuthorizationFilter extends OncePerRequestFilter {
 
     private static final Logger log = LoggerFactory.getLogger(JWTAuthorizationFilter.class);
 
-    public static final String TOKEN_DATA_DELIMITER = String.valueOf(Character.LINE_SEPARATOR);
+    // Unit separator: a single ISO control character, so it can never appear in a tenant,
+    // realm or subject (DepotUtil rejects ISO control characters in all three).
+    public static final String TOKEN_DATA_DELIMITER = "\u001F";
 
     private final String HEADER = "Authorization";
 

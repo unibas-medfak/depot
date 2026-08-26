@@ -1,6 +1,7 @@
 package ch.unibas.medizin.depot.service;
 
 import ch.unibas.medizin.depot.config.DepotProperties;
+import ch.unibas.medizin.depot.security.JWTAuthorizationFilter;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -19,7 +20,7 @@ import static org.junit.jupiter.api.Assertions.*;
 @SpringBootTest
 public class BackupTests {
 
-    private static final String BACKUP_USER = "tenant_b" + Character.LINE_SEPARATOR + "realm" + Character.LINE_SEPARATOR + "subject";
+    private static final String BACKUP_USER = "tenant_b" + JWTAuthorizationFilter.TOKEN_DATA_DELIMITER + "realm" + JWTAuthorizationFilter.TOKEN_DATA_DELIMITER + "subject";
 
     @Autowired
     private DepotService depotService;

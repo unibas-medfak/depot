@@ -32,6 +32,7 @@ import java.io.IOException;
 import java.nio.file.*;
 import java.nio.file.attribute.BasicFileAttributes;
 import java.util.*;
+import java.util.regex.Pattern;
 
 @Service
 @NullMarked
@@ -319,7 +320,10 @@ public record DepotService(
             throw new IllegalStateException("Not authenticated");
         }
 
-        final var tenantRealmAndSubject = Arrays.asList(authentication.getName().split(JWTAuthorizationFilter.TOKEN_DATA_DELIMITER));
+        // Keep trailing empty parts (limit -1) so an injected delimiter yields the wrong part
+        // count and is rejected below, rather than silently truncating the subject.
+        final var tenantRealmAndSubject = Arrays.asList(
+                authentication.getName().split(Pattern.quote(JWTAuthorizationFilter.TOKEN_DATA_DELIMITER), -1));
         if (tenantRealmAndSubject.size() != 3) {
             throw new IllegalStateException("Illegal security context");
         }
