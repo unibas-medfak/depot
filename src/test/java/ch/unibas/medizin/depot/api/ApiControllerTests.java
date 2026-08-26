@@ -25,8 +25,10 @@ import java.io.BufferedOutputStream;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
+import java.nio.file.FileSystems;
 import java.nio.file.Files;
 import java.nio.file.StandardOpenOption;
+import java.nio.file.attribute.PosixFilePermission;
 import java.time.Duration;
 import java.time.Instant;
 import java.time.LocalDate;
@@ -36,8 +38,10 @@ import java.util.Arrays;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Random;
+import java.util.Set;
 
 import static org.junit.jupiter.api.Assertions.*;
+import static org.junit.jupiter.api.Assumptions.assumeTrue;
 
 @NullMarked
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
@@ -779,6 +783,31 @@ public class ApiControllerTests {
 
         var mismatch = Files.mismatch(randomFile.toPath(), combinedFile.toPath());
         assertEquals(-1, mismatch);
+    }
+
+    @Test
+    public void Get_unreadable_file_is_reported_as_not_found() throws IOException {
+        assumeTrue(FileSystems.getDefault().supportedFileAttributeViews().contains("posix"),
+                "needs POSIX permissions to make a file unreadable");
+
+        var token = freshTenant();
+        var randomFile = randomFile(1024);
+        putFile(token, "/unreadable", randomFile);
+
+        var storedFile = depotProperties.getBaseDirectory()
+                .resolve("tenant_a").resolve("realm").resolve("unreadable").resolve(randomFile.getName());
+        Files.setPosixFilePermissions(storedFile, Set.of());
+        assumeTrue(!Files.isReadable(storedFile), "could not make the file unreadable (running as root?)");
+
+        try {
+            webTestClient.get()
+                    .uri("/get?file=/unreadable/" + randomFile.getName())
+                    .header("Authorization", "Bearer " + token)
+                    .exchange()
+                    .expectStatus().isNotFound();
+        } finally {
+            Files.setPosixFilePermissions(storedFile, Set.of(PosixFilePermission.OWNER_READ, PosixFilePermission.OWNER_WRITE));
+        }
     }
 
     @Test

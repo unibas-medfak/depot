@@ -121,7 +121,7 @@ public record DepotService(
 
         final var resource = new FileSystemResource(fullPath);
 
-        if (!resource.exists() && !resource.isReadable()) {
+        if (!resource.exists() || !resource.isReadable()) {
             throw new FileNotFoundException(file);
         }
 
