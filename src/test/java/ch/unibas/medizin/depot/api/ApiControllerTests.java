@@ -42,6 +42,9 @@ import static org.junit.jupiter.api.Assertions.*;
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT)
 public class ApiControllerTests {
 
+    // Uploads of 100 MB can take well over a minute on a loaded CI runner.
+    private static final Duration RESPONSE_TIMEOUT = Duration.ofMinutes(5);
+
     private final Instant today = LocalDate.now(ZoneOffset.UTC).atStartOfDay(ZoneOffset.UTC).toInstant();
 
     private final Instant tomorrow = today.plus(1, ChronoUnit.DAYS);
@@ -56,7 +59,7 @@ public class ApiControllerTests {
 
     @BeforeEach
     void setUp() {
-        webTestClient = WebTestClient.bindToServer().baseUrl("http://localhost:" + port).responseTimeout(Duration.ofMinutes(1)).build();
+        webTestClient = WebTestClient.bindToServer().baseUrl("http://localhost:" + port).responseTimeout(RESPONSE_TIMEOUT).build();
     }
 
     @Test
@@ -522,6 +525,10 @@ public class ApiControllerTests {
         var randomFile = randomFile(fileSize);
         var resource = new FileSystemResource(randomFile);
 
+        // Anchored before the uploads (minus a little slack for filesystem timestamp
+        // granularity), so the assertions hold no matter how slow the uploads are.
+        var beforeUpload = Instant.now().minusSeconds(5);
+
         var bodyBuilder1 = new MultipartBodyBuilder();
         bodyBuilder1.part("file", resource);
 
@@ -569,15 +576,14 @@ public class ApiControllerTests {
 
         var folderEntry = Arrays.stream(listBody).filter(a -> a.type().equals(FileDto.FileType.FOLDER)).findFirst().orElseThrow();
         assertEquals("b", folderEntry.name());
-        var now = Instant.now();
         var modified = folderEntry.modified();
-        assertTrue(now.minusSeconds(5).isBefore(modified));
+        assertTrue(beforeUpload.isBefore(modified));
         assertEquals(0, folderEntry.size());
 
         var fileEntry = Arrays.stream(listBody).filter(a -> a.type().equals(FileDto.FileType.FILE)).findFirst().orElseThrow();
         assertEquals(randomFile.getName(), fileEntry.name());
         modified = fileEntry.modified();
-        assertTrue(now.minusSeconds(5).isBefore(modified));
+        assertTrue(beforeUpload.isBefore(modified));
         assertEquals(fileSize, fileEntry.size());
     }
 
@@ -618,7 +624,7 @@ public class ApiControllerTests {
         var webTestClient = WebTestClient
                 .bindToServer()
                 .baseUrl("http://localhost:" + port)
-                .responseTimeout(Duration.ofMinutes(1L))
+                .responseTimeout(RESPONSE_TIMEOUT)
                 .codecs(configurer -> configurer.defaultCodecs().maxInMemorySize(150 * 1024 * 1024))
                 .build();
         var registerResponse = webTestClient.post()
@@ -674,7 +680,7 @@ public class ApiControllerTests {
         var webTestClient = WebTestClient
                 .bindToServer()
                 .baseUrl("http://localhost:" + port)
-                .responseTimeout(Duration.ofMinutes(1L))
+                .responseTimeout(RESPONSE_TIMEOUT)
                 .codecs(configurer -> configurer.defaultCodecs().maxInMemorySize(150 * 1024 * 1024))
                 .build();
         var registerResponse = webTestClient.post()
@@ -724,7 +730,7 @@ public class ApiControllerTests {
         var secondSliceBytes = webTestClient.get()
                 .uri("/get?file=/test/a/" + randomFile.getName())
                 .header("Authorization", "Bearer " + token)
-                .header("Range", String.format("bytes=%d-%d", firstSliceSize, fileSize))
+                .header("Range", String.format("bytes=%d-%d", firstSliceSize, fileSize - 1))
                 .exchange()
                 .expectStatus().isEqualTo(HttpStatus.PARTIAL_CONTENT.value())
                 .expectBody(byte[].class)
