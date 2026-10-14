@@ -68,6 +68,39 @@ Both endpoints are rate-limited per client IP (default: 5 attempts per 15 minute
 
 See Swagger UI for detailed API documentation and testing interface.
 
+## frontend login links
+
+The frontend accepts a JWT in the URL fragment, so a link can log a user straight in:
+
+```
+<host>/#token=<jwt>
+<host>/browse/<folder>#token=<jwt>
+<host>/view/<folder>/<file>#token=<jwt>
+```
+
+`<folder>` and `<file>` are relative to the token's realm. On load the frontend reads `token` from the fragment and stores it in `localStorage` if it decodes and hasn't expired. It then removes the fragment from the address bar. Because the token goes in the fragment (`#`) rather than the query string (`?`), the browser never sends it to the server and it doesn't show up in access logs.
+
+To build a link by hand, request a token and append it:
+
+```console
+$ TOKEN=$(curl -sS -X POST http://localhost:8080/admin/register \
+    -H 'Content-Type: application/json' \
+    -d '{"tenant":"default","password":"...","realm":"test","subject":"reader","mode":"r","expirationDate":"2026-12-31"}' \
+    | sed -n 's/.*"token":"\([^"]*\)".*/\1/p')
+$ echo "http://localhost:8080/browse/reports#token=$TOKEN"
+```
+
+Or use `getToken.sh`, which prompts for the tenant password:
+
+```console
+$ ./getToken.sh --link                  # http://localhost:8080/#token=...
+$ ./getToken.sh --link /browse/reports  # http://localhost:8080/browse/reports#token=...
+$ ./getToken.sh --qr > qr.png           # QR code for <depot.host>/#token=...
+$ HOST=depot.example.com REALM=exam MODE=rw ./getToken.sh --link
+```
+
+Anyone with the link has the token's permissions until `expirationDate`, so pick the narrowest `mode` and a short expiry. `POST /admin/qr` always encodes the root URL (`depot.host` + `/#token=`).
+
 ## passwords
 
 Passwords are stored as bcrypt hash https://bcrypt-generator.com/
