@@ -1,6 +1,8 @@
 package ch.unibas.medizin.depot.config;
 
 import ch.unibas.medizin.depot.security.JWTAuthorizationFilter;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.http.HttpMethod;
@@ -16,10 +18,14 @@ import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.HttpStatusEntryPoint;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 
+import static net.logstash.logback.argument.StructuredArguments.kv;
+
 @Configuration
 @EnableWebSecurity
 @EnableMethodSecurity
 public class SecurityConfiguration {
+
+    private static final Logger log = LoggerFactory.getLogger(SecurityConfiguration.class);
 
     private final JWTAuthorizationFilter jwtAuthorizationFilter;
 
@@ -29,6 +35,8 @@ public class SecurityConfiguration {
 
     @Bean
     protected SecurityFilterChain filterChain(HttpSecurity httpSecurity) {
+        final var unauthorizedEntryPoint = new HttpStatusEntryPoint(HttpStatus.UNAUTHORIZED);
+
         httpSecurity
                 .csrf(AbstractHttpConfigurer::disable)
                 .addFilterAfter(jwtAuthorizationFilter, UsernamePasswordAuthenticationFilter.class)
@@ -43,7 +51,10 @@ public class SecurityConfiguration {
                         sessionManagement.sessionCreationPolicy(SessionCreationPolicy.STATELESS)
                 )
                 .exceptionHandling(exceptionHandling ->
-                        exceptionHandling.authenticationEntryPoint(new HttpStatusEntryPoint(HttpStatus.UNAUTHORIZED))
+                        exceptionHandling.authenticationEntryPoint((request, response, authException) -> {
+                            log.warn("Unauthenticated request {} {} {}", kv("method", request.getMethod()), kv("uri", request.getRequestURI()), kv("client", request.getRemoteAddr()));
+                            unauthorizedEntryPoint.commence(request, response, authException);
+                        })
                 );
 
         return httpSecurity.build();

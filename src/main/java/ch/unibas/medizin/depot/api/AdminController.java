@@ -8,6 +8,8 @@ import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Validator;
 import org.jspecify.annotations.NullMarked;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -15,11 +17,15 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+import static net.logstash.logback.argument.StructuredArguments.kv;
+
 @NullMarked
 @RestController
 @RequestMapping("/admin")
 @Tag(name = "Admin", description = "Admin API")
 public class AdminController {
+
+    private static final Logger log = LoggerFactory.getLogger(AdminController.class);
 
     private final AccessTokenService accessTokenService;
 
@@ -49,6 +55,11 @@ public class AdminController {
 
     private void throwIfInvalid(final AccessTokenRequestDto accessTokenRequestDto) {
         for (final var violation : validator.validate(accessTokenRequestDto)) {
+            // The value is deliberately not logged: the violation may be on the password field.
+            // The constraint name is logged instead of the message, which is localized to the JVM locale.
+            log.info("Invalid token request {} {}",
+                    kv("field", violation.getPropertyPath().toString()),
+                    kv("constraint", violation.getConstraintDescriptor().getAnnotation().annotationType().getSimpleName()));
             // String.valueOf keeps a missing field reportable as "null" instead of throwing:
             // getInvalidValue() is null for a @NotNull or @NotBlank violation on an absent field.
             throw new InvalidRequestException(

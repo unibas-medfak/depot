@@ -20,6 +20,8 @@ import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 
+import static net.logstash.logback.argument.StructuredArguments.kv;
+
 @Component
 @NullMarked
 public class RateLimitingFilter extends OncePerRequestFilter {
@@ -52,7 +54,7 @@ public class RateLimitingFilter extends OncePerRequestFilter {
             return;
         }
 
-        log.warn("Rate limit exceeded for {} on {}", clientId, request.getRequestURI());
+        log.warn("Rate limit exceeded {} {} {}", kv("method", request.getMethod()), kv("uri", request.getRequestURI()), kv("client", clientId));
         response.setStatus(HttpStatus.TOO_MANY_REQUESTS.value());
         response.setContentType(MediaType.APPLICATION_PROBLEM_JSON_VALUE);
         response.getWriter().write(

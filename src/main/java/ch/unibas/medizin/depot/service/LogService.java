@@ -20,8 +20,14 @@ import java.util.Map;
 public class LogService {
 
     public enum EventType {
-        TOKEN, GET, PUT, LIST, DELETE, MOVE
+        TOKEN, TOKEN_DENIED, GET, PUT, LIST, DELETE, MOVE
     }
+
+    private static final org.slf4j.Logger log = LoggerFactory.getLogger(LogService.class);
+
+    // Prefix keeps tenant loggers out of the application's logger hierarchy, so a tenant
+    // named e.g. "org" or "ch" does not swallow those packages' log output.
+    private static final String AUDIT_LOGGER_PREFIX = "depot.audit.";
 
     private final Map<String, Logger> loggers = new HashMap<>();
 
@@ -43,7 +49,7 @@ public class LogService {
             fileAppender.setContext(loggerContext);
             fileAppender.start();
 
-            var logger = loggerContext.getLogger(tenant);
+            var logger = loggerContext.getLogger(AUDIT_LOGGER_PREFIX + tenant);
             logger.setAdditive(false);
             logger.setLevel(Level.INFO);
             logger.addAppender(fileAppender);
@@ -54,9 +60,11 @@ public class LogService {
 
     public void log(final String tenant, final EventType type, final String subject, final String description) {
         var logger = loggers.get(tenant);
-        if (logger != null) {
-            logger.info("{} {} {}", type, subject, description);
+        if (logger == null) {
+            log.warn("Dropping audit event {} for unknown tenant {}", type, tenant);
+            return;
         }
+        logger.info("{} {} {}", type, subject, description);
     }
 
 }

@@ -1,6 +1,9 @@
 package ch.unibas.medizin.depot.config;
 
 import ch.unibas.medizin.depot.exception.*;
+import jakarta.servlet.http.HttpServletRequest;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ProblemDetail;
 import org.springframework.security.access.AccessDeniedException;
@@ -9,8 +12,12 @@ import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 
+import static net.logstash.logback.argument.StructuredArguments.kv;
+
 @RestControllerAdvice(annotations = RestController.class)
 public record RestExceptionHandler() {
+
+    private static final Logger log = LoggerFactory.getLogger(RestExceptionHandler.class);
 
     @ExceptionHandler(PathNotFoundException.class)
     public ProblemDetail handlePathNotFoundException(final PathNotFoundException pathNotFoundException) {
@@ -61,14 +68,18 @@ public record RestExceptionHandler() {
     }
 
     @ExceptionHandler(AuthenticationException.class)
-    public ProblemDetail handleAuthentication(final AuthenticationException authenticationException) {
+    public ProblemDetail handleAuthentication(final AuthenticationException authenticationException, final HttpServletRequest request) {
+        log.warn("Authentication failed {} {} {} {}",
+                kv("method", request.getMethod()), kv("uri", request.getRequestURI()), kv("client", request.getRemoteAddr()), kv("reason", authenticationException.getMessage()));
         var problemDetails = ProblemDetail.forStatusAndDetail(HttpStatus.UNAUTHORIZED, authenticationException.getLocalizedMessage());
         problemDetails.setTitle("Unauthorized");
         return problemDetails;
     }
 
     @ExceptionHandler(AccessDeniedException.class)
-    public ProblemDetail handleAccessDenied(final AccessDeniedException accessDeniedException) {
+    public ProblemDetail handleAccessDenied(final AccessDeniedException accessDeniedException, final HttpServletRequest request) {
+        log.warn("Access denied {} {} {}",
+                kv("method", request.getMethod()), kv("uri", request.getRequestURI()), kv("client", request.getRemoteAddr()));
         var problemDetails = ProblemDetail.forStatusAndDetail(HttpStatus.FORBIDDEN, accessDeniedException.getLocalizedMessage());
         problemDetails.setTitle("Access denied");
         return problemDetails;

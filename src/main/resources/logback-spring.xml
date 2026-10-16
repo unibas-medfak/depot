@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<configuration>
+	<!-- Shows tenant/realm/subject (set by JWTAuthorizationFilter) on the console; omitted when not authenticated -->
+	<property name="LOG_CORRELATION_PATTERN" value="%replace([%X{tenant}/%X{realm}/%X{subject}] ){'^\[//\] $', ''}"/>
+	<include resource="org/springframework/boot/logging/logback/defaults.xml"/>
+	<include resource="org/springframework/boot/logging/logback/console-appender.xml"/>
+
+	<property name="JSON_LOG_FILE" value="${LOG_PATH:-${java.io.tmpdir:-/tmp}}/depot.json"/>
+	<appender name="JSON" class="ch.qos.logback.core.rolling.RollingFileAppender">
+		<file>${JSON_LOG_FILE}</file>
+		<rollingPolicy class="ch.qos.logback.core.rolling.SizeAndTimeBasedRollingPolicy">
+			<fileNamePattern>${JSON_LOG_FILE}.%d{yyyy-MM-dd}.%i.gz</fileNamePattern>
+			<maxFileSize>10MB</maxFileSize>
+			<maxHistory>7</maxHistory>
+			<totalSizeCap>1GB</totalSizeCap>
+		</rollingPolicy>
+		<filter class="ch.qos.logback.core.filter.EvaluatorFilter">
+			<evaluator class="ch.qos.logback.classic.boolex.OnMarkerEvaluator">
+				<marker>CONSOLE_ONLY</marker>
+			</evaluator>
+			<onMatch>DENY</onMatch>
+			<onMismatch>NEUTRAL</onMismatch>
+		</filter>
+		<encoder class="net.logstash.logback.encoder.LogstashEncoder"/>
+	</appender>
+
+	<root level="INFO">
+		<appender-ref ref="CONSOLE"/>
+		<appender-ref ref="JSON"/>
+	</root>
+</configuration>

@@ -13,6 +13,7 @@ import jakarta.servlet.http.HttpServletResponse;
 import org.jspecify.annotations.NullMarked;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.slf4j.MDC;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
@@ -22,6 +23,8 @@ import org.springframework.web.filter.OncePerRequestFilter;
 
 import java.io.IOException;
 import java.util.ArrayList;
+
+import static net.logstash.logback.argument.StructuredArguments.kv;
 
 @Component
 @NullMarked
@@ -46,15 +49,46 @@ public class JWTAuthorizationFilter extends OncePerRequestFilter {
 
     @Override
     protected void doFilterInternal(final HttpServletRequest httpServletRequest, final HttpServletResponse httpServletResponse, final FilterChain filterChain) throws ServletException, IOException {
-        if (checkJWTToken(httpServletRequest)) {
-            try {
-                final var decodedJWT = validateToken(httpServletRequest);
-                setUpSpringAuthentication(decodedJWT);
-            } catch (JWTVerificationException e) {
-                log.error("JWT verification failed: {}", e.getMessage());
-            }
+        if (!checkJWTToken(httpServletRequest)) {
+            filterChain.doFilter(httpServletRequest, httpServletResponse);
+            return;
         }
-        filterChain.doFilter(httpServletRequest, httpServletResponse);
+
+        final DecodedJWT decodedJWT;
+        try {
+            decodedJWT = validateToken(httpServletRequest);
+        } catch (JWTVerificationException e) {
+            log.warn("Rejected JWT {} {} {} {}",
+                    kv("method", httpServletRequest.getMethod()), kv("uri", httpServletRequest.getRequestURI()), kv("client", httpServletRequest.getRemoteAddr()), kv("reason", e.getMessage()));
+            filterChain.doFilter(httpServletRequest, httpServletResponse);
+            return;
+        }
+
+        final var tenant = decodedJWT.getClaim("tenant").asString();
+        final var realm = decodedJWT.getClaim("realm").asString();
+        final var subject = decodedJWT.getSubject();
+        final var mode = decodedJWT.getClaim("mode").asString();
+
+        if (tenant == null || realm == null || subject == null || mode == null) {
+            log.warn("Rejected JWT with missing claims {} {} {}",
+                    kv("method", httpServletRequest.getMethod()), kv("uri", httpServletRequest.getRequestURI()), kv("client", httpServletRequest.getRemoteAddr()));
+            filterChain.doFilter(httpServletRequest, httpServletResponse);
+            return;
+        }
+
+        setUpSpringAuthentication(tenant, realm, subject, mode);
+
+        // Exposed as separate fields in the JSON log for everything logged during this request
+        MDC.put("tenant", tenant);
+        MDC.put("realm", realm);
+        MDC.put("subject", subject);
+        try {
+            filterChain.doFilter(httpServletRequest, httpServletResponse);
+        } finally {
+            MDC.remove("tenant");
+            MDC.remove("realm");
+            MDC.remove("subject");
+        }
     }
 
     private DecodedJWT validateToken(final HttpServletRequest httpServletRequest) {
@@ -62,24 +96,24 @@ public class JWTAuthorizationFilter extends OncePerRequestFilter {
         return verifier.verify(token);
     }
 
-    private void setUpSpringAuthentication(final DecodedJWT decodedJWT) {
+    private void setUpSpringAuthentication(final String tenant, final String realm, final String subject, final String mode) {
         final var tenantRealmAndSubject = String.format(
                 "%s%s%s%s%s",
-                decodedJWT.getClaim("tenant").asString(),
+                tenant,
                 JWTAuthorizationFilter.TOKEN_DATA_DELIMITER,
-                decodedJWT.getClaim("realm").asString(),
+                realm,
                 JWTAuthorizationFilter.TOKEN_DATA_DELIMITER,
-                decodedJWT.getSubject()
+                subject
         );
 
         final var grantedAuthorities = new ArrayList<GrantedAuthority>();
-        if (decodedJWT.getClaim("mode").asString().contains("r")) {
+        if (mode.contains("r")) {
             grantedAuthorities.add(new SimpleGrantedAuthority("ROLE_READ"));
         }
-        if (decodedJWT.getClaim("mode").asString().contains("w")) {
+        if (mode.contains("w")) {
             grantedAuthorities.add(new SimpleGrantedAuthority("ROLE_WRITE"));
         }
-        if (decodedJWT.getClaim("mode").asString().contains("d")) {
+        if (mode.contains("d")) {
             grantedAuthorities.add(new SimpleGrantedAuthority("ROLE_DELETE"));
         }
 

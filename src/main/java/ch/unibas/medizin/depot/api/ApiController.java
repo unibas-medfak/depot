@@ -25,6 +25,8 @@ import org.springframework.web.multipart.MultipartFile;
 
 import java.util.List;
 
+import static net.logstash.logback.argument.StructuredArguments.kv;
+
 @NullMarked
 @RestController
 @SecurityRequirement(name = "depotapi")
@@ -47,7 +49,7 @@ public class ApiController {
     public ResponseEntity<List<FileDto>> list(@Parameter(description = "Path to be listed", example = "pictures/cats") @RequestParam("path") final String path,
                                                   @Parameter(description = "Whether the response shall contain a Murmur3 hash of each file", example = "true") @RequestParam(required = false) final boolean hash) {
         if (!DepotUtil.isValidPath(path)) {
-            log.error("Invalid request - list path {}", path);
+            log.info("Invalid list request {}", kv("path", path));
             throw new InvalidRequestException("path", path, INVALID_REQUEST_DETAIL);
         }
 
@@ -59,7 +61,7 @@ public class ApiController {
     @Operation(summary = "Retrieve a file")
     public ResponseEntity<Resource> get(@Parameter(description = "Filename and Path to be retrieved", example = "pictures/cats/cat.png") @RequestParam("file") final String file) {
         if (!DepotUtil.isValidAbsolutPath(file)) {
-            log.error("Invalid request - get file {}", file);
+            log.info("Invalid get request {}", kv("file", file));
             throw new InvalidRequestException("file", file, INVALID_REQUEST_DETAIL);
         }
 
@@ -74,17 +76,17 @@ public class ApiController {
                                                   @Parameter(description = "Whether the response shall contain a Murmur3 hash of the stored data", example = "true") @RequestParam(required = false) final boolean hash) {
 
         if (!DepotUtil.isValidPath(path)) {
-            log.error("Invalid request - put path {}", path);
+            log.info("Invalid put request {}", kv("path", path));
             throw new InvalidRequestException("path", path, INVALID_REQUEST_DETAIL);
         }
 
         if (null == file.getOriginalFilename()) {
-            log.error("Invalid request - put filename null");
+            log.info("Invalid put request without filename");
             throw new InvalidRequestException("filename", "null", INVALID_REQUEST_DETAIL);
         }
 
         if (!DepotUtil.isValidFilename(file.getOriginalFilename())) {
-            log.error("Invalid request - put filename {}", file.getOriginalFilename());
+            log.info("Invalid put request {}", kv("filename", file.getOriginalFilename()));
             throw new InvalidRequestException("filename", file.getOriginalFilename(), INVALID_REQUEST_DETAIL);
         }
 
@@ -97,12 +99,12 @@ public class ApiController {
     public ResponseEntity<Void> move(@Parameter(description = "Source path", example = "pictures/cats/cat.png") @RequestParam("fromPath") final String fromPath,
                                      @Parameter(description = "Destination path", example = "pictures/dogs/cat.png") @RequestParam("toPath") final String toPath) {
         if (!DepotUtil.isValidPath(fromPath)) {
-            log.error("Invalid request - move fromPath {}", fromPath);
+            log.info("Invalid move request {}", kv("from", fromPath));
             throw new InvalidRequestException("fromPath", fromPath, INVALID_REQUEST_DETAIL);
         }
 
         if (!DepotUtil.isValidPath(toPath)) {
-            log.error("Invalid request - move toPath {}", toPath);
+            log.info("Invalid move request {}", kv("to", toPath));
             throw new InvalidRequestException("toPath", toPath, INVALID_REQUEST_DETAIL);
         }
 
@@ -115,7 +117,7 @@ public class ApiController {
     @Operation(summary = "Delete a file or folder at the given path")
     public ResponseEntity<Void> delete(@Parameter(description = "Filename or Folder to be delete", example = "pictures/cats/cat.png") @RequestParam("path") final String path) {
         if (!DepotUtil.isValidPath(path)) {
-            log.error("Invalid request - delete path {}", path);
+            log.info("Invalid delete request {}", kv("path", path));
             throw new InvalidRequestException("path", path, INVALID_REQUEST_DETAIL);
         }
 

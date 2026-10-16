@@ -17,6 +17,8 @@ import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.util.Locale;
 
+import static net.logstash.logback.argument.StructuredArguments.kv;
+
 @Service
 @NullMarked
 public record AccessTokenService(
@@ -57,6 +59,7 @@ public record AccessTokenService(
         try {
             ImageIO.write(result, "png", byteArrayOutputStream);
         } catch (IOException e) {
+            log.error("Could not render QR code", e);
             throw new RuntimeException(e);
         }
 
@@ -66,12 +69,12 @@ public record AccessTokenService(
     private String getToken(AccessTokenRequestDto accessTokenRequestDto) {
         authorizationService.throwIfAdminPasswordMismatches(accessTokenRequestDto.tenant(), accessTokenRequestDto.password());
 
-        log.info("Token requested with tenant={} realm={} subject={} mode={} expirationDate={}",
-                accessTokenRequestDto.tenant(),
-                accessTokenRequestDto.realm(),
-                accessTokenRequestDto.subject(),
-                accessTokenRequestDto.mode(),
-                accessTokenRequestDto.expirationDate());
+        log.info("Issuing token {} {} {} {} {}",
+                kv("tenant", accessTokenRequestDto.tenant()),
+                kv("realm", accessTokenRequestDto.realm()),
+                kv("subject", accessTokenRequestDto.subject()),
+                kv("mode", accessTokenRequestDto.mode()),
+                kv("expires", accessTokenRequestDto.expirationDate().toString()));
 
         final var logString = String.format("%s %s %s %s", accessTokenRequestDto.tenant(), accessTokenRequestDto.realm(), accessTokenRequestDto.mode(), accessTokenRequestDto.expirationDate());
         logService.log(accessTokenRequestDto.tenant(), LogService.EventType.TOKEN, accessTokenRequestDto.subject(), logString);
