@@ -88,11 +88,11 @@ public record DepotService(
                 }
             });
         } catch (IOException e) {
-            if (normalizedPath.toString().isBlank()) {
-                return List.of();
+            if (!normalizedPath.toString().isBlank()) {
+                log.info("List path not found {}", kv("path", fullPath.toString()));
+                throw new PathNotFoundException(path);
             }
-            log.info("List path not found {}", kv("path", fullPath.toString()));
-            throw new PathNotFoundException(path);
+            // Realm root not created yet (nothing stored so far): a valid, empty listing
         }
 
         logService.log(tokenData.tenant, LogService.EventType.LIST, tokenData.subject(), fullPath.toString());

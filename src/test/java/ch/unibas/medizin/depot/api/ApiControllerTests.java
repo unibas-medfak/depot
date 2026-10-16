@@ -1252,18 +1252,22 @@ public class ApiControllerTests {
         assertNotNull(registerResponse);
         var token = registerResponse.token();
 
+        // The audit log is append-only and survives between runs, so only lines written by
+        // this request count; otherwise an entry from an earlier run could satisfy the assertion.
+        var logFile = depotProperties.getBaseDirectory().resolve("tenant_a").resolve(DepotUtil.LOGFILE_NAME);
+        var linesBefore = Files.exists(logFile) ? Files.readAllLines(logFile).size() : 0;
+
         webTestClient.get()
                 .uri("/list?path=")
                 .header("Authorization", "Bearer " + token)
                 .exchange()
                 .expectStatus().isOk();
 
-        var logFile = depotProperties.getBaseDirectory().resolve("tenant_a").resolve(DepotUtil.LOGFILE_NAME);
-        var logLines = Files.readAllLines(logFile);
-        var listEntry = logLines.stream()
+        var newLogLines = Files.readAllLines(logFile).stream().skip(linesBefore).toList();
+        var listEntry = newLogLines.stream()
                 .filter(line -> line.contains("LIST") && line.endsWith("delimiterrealm"))
-                .reduce((first, second) -> second)
-                .orElseThrow();
+                .findFirst()
+                .orElseThrow(() -> new AssertionError("no LIST audit entry written by this request: " + newLogLines));
 
         assertTrue(listEntry.contains("LIST " + subject + " "), "audit log lost part of the subject: " + listEntry);
     }
