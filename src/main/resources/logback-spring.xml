@@ -5,7 +5,38 @@
 	<include resource="org/springframework/boot/logging/logback/defaults.xml"/>
 	<include resource="org/springframework/boot/logging/logback/console-appender.xml"/>
 
-	<property name="JSON_LOG_FILE" value="${LOG_PATH:-${java.io.tmpdir:-/tmp}}/depot.json"/>
+	<!-- Same defaults as Spring Boot's base.xml: logging.file.name, else logging.file.path/spring.log -->
+	<property name="LOG_FILE" value="${LOG_FILE:-${LOG_PATH:-${LOG_TEMP:-${java.io.tmpdir:-/tmp}}}/spring.log}"/>
+	<!-- logging.file.json-name, else logging.file.path/depot.json -->
+	<springProperty name="CONFIGURED_JSON_LOG_FILE" source="logging.file.json-name"/>
+	<property name="JSON_LOG_FILE" value="${CONFIGURED_JSON_LOG_FILE:-${LOG_PATH:-${java.io.tmpdir:-/tmp}}/depot.json}"/>
+
+	<!-- Spring Boot's file appender (file-appender.xml), plus the CONSOLE_ONLY filter so secrets are not persisted -->
+	<appender name="FILE" class="ch.qos.logback.core.rolling.RollingFileAppender">
+		<filter class="ch.qos.logback.classic.filter.ThresholdFilter">
+			<level>${FILE_LOG_THRESHOLD}</level>
+		</filter>
+		<filter class="ch.qos.logback.core.filter.EvaluatorFilter">
+			<evaluator class="ch.qos.logback.classic.boolex.OnMarkerEvaluator">
+				<marker>CONSOLE_ONLY</marker>
+			</evaluator>
+			<onMatch>DENY</onMatch>
+			<onMismatch>NEUTRAL</onMismatch>
+		</filter>
+		<encoder>
+			<pattern>${FILE_LOG_PATTERN}</pattern>
+			<charset>${FILE_LOG_CHARSET}</charset>
+		</encoder>
+		<file>${LOG_FILE}</file>
+		<rollingPolicy class="ch.qos.logback.core.rolling.SizeAndTimeBasedRollingPolicy">
+			<fileNamePattern>${LOGBACK_ROLLINGPOLICY_FILE_NAME_PATTERN:-${LOG_FILE}.%d{yyyy-MM-dd}.%i.gz}</fileNamePattern>
+			<cleanHistoryOnStart>${LOGBACK_ROLLINGPOLICY_CLEAN_HISTORY_ON_START:-false}</cleanHistoryOnStart>
+			<maxFileSize>${LOGBACK_ROLLINGPOLICY_MAX_FILE_SIZE:-10MB}</maxFileSize>
+			<totalSizeCap>${LOGBACK_ROLLINGPOLICY_TOTAL_SIZE_CAP:-0}</totalSizeCap>
+			<maxHistory>${LOGBACK_ROLLINGPOLICY_MAX_HISTORY:-7}</maxHistory>
+		</rollingPolicy>
+	</appender>
+
 	<appender name="JSON" class="ch.qos.logback.core.rolling.RollingFileAppender">
 		<file>${JSON_LOG_FILE}</file>
 		<rollingPolicy class="ch.qos.logback.core.rolling.SizeAndTimeBasedRollingPolicy">
@@ -26,6 +57,7 @@
 
 	<root level="INFO">
 		<appender-ref ref="CONSOLE"/>
+		<appender-ref ref="FILE"/>
 		<appender-ref ref="JSON"/>
 	</root>
 </configuration>
