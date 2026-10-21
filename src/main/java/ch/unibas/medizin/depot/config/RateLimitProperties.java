@@ -12,10 +12,10 @@ public record RateLimitProperties(
 ) {
     public RateLimitProperties {
         if (maxAttempts <= 0) {
-            maxAttempts = 5;
+            maxAttempts = 20;
         }
         if (window == null || window.isZero() || window.isNegative()) {
-            window = Duration.ofMinutes(15);
+            window = Duration.ofMinutes(5);
         }
     }
 }
