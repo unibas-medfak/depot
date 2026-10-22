@@ -67,6 +67,16 @@ public record RestExceptionHandler() {
         return problemDetails;
     }
 
+    @ExceptionHandler(UploadException.class)
+    public ProblemDetail handleUploadException(final UploadException uploadException) {
+        var problemDetails = ProblemDetail.forStatusAndDetail(uploadException.getStatus(), uploadException.getLocalizedMessage());
+        problemDetails.setTitle(uploadException.getTitle());
+        if (uploadException.getBytesReceived() != null) {
+            problemDetails.setProperty("bytesReceived", uploadException.getBytesReceived());
+        }
+        return problemDetails;
+    }
+
     @ExceptionHandler(AuthenticationException.class)
     public ProblemDetail handleAuthentication(final AuthenticationException authenticationException, final HttpServletRequest request) {
         log.warn("Authentication failed {} {} {} {}",

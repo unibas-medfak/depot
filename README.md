@@ -62,6 +62,23 @@ Both endpoints are rate-limited per client IP (default: 20 attempts per 5 minute
 - `GET /move?fromPath=<src>&toPath=<dst>` - Move/rename a file or folder (requires WRITE role; refuses to overwrite an existing destination)
 - `GET /delete?path=<path>` - Delete file/folder (requires DELETE role; honors per-tenant soft-delete)
 
+### Chunked Upload (`/upload`, requires WRITE role)
+For files too large or too slow for a single `POST /put`. An upload is a session owned by the token's subject; other subjects see it as `404`. The file is stored like `/put` (same path rules, backup and audit log) once the upload is completed.
+
+- `POST /upload` - Start an upload with `{"path": "pictures/cats", "filename": "cat.mp4", "size": 3221225472, "hash": true}`. Returns `201` with `uploadId`, `chunkSize` (the maximum bytes per chunk) and `expiresAt`
+- `PUT /upload/{id}?offset=<n>` - Send a chunk as a raw `application/octet-stream` body. `offset` must equal `bytesReceived`, so chunks are strictly sequential. Otherwise the response is `409` with the current `bytesReceived`. An optional `X-Chunk-Checksum` header (hex SHA-256 of the chunk) is verified, mismatches get `422`
+- `GET /upload/{id}` - Progress (`bytesReceived`), used to resume after an interruption
+- `POST /upload/{id}/complete` - Store the file once `bytesReceived == size`; responds like `/put` (with the Murmur3 `hash` if requested at start)
+- `DELETE /upload/{id}` - Abort and discard the received data
+
+```console
+$ # chunk 0 of a file; repeat with the next offset until all bytes are sent
+$ curl -X PUT -H "Authorization: Bearer $TOKEN" -H 'Content-Type: application/octet-stream' \
+    --data-binary @chunk0 "http://localhost:8080/upload/$ID?offset=0"
+```
+
+A failed or interrupted chunk is discarded entirely, so resend it from `bytesReceived`. Sessions expire after `depot.upload.ttl` of inactivity and are kept in memory, so they do not survive a restart. Configure via `depot.upload.{max-size,chunk-size,ttl,max-sessions}` (defaults: 10GB, 8MB, 24h, 10 open uploads per subject). The Murmur3 hash is computed at completion by reading the whole file into memory, as for `/put`.
+
 ### Info
 - `GET /info` - Service version + GitHub and Swagger URLs (public, JSON)
 - `GET /` - React frontend (browser, preview, login terminal)

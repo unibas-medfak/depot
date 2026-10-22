@@ -141,10 +141,63 @@ public record DepotService(
 
     public PutFileResponseDto put(final MultipartFile file, final String path, final boolean hash) {
         final var tokenData = getTokenData();
+        final var filename = Objects.requireNonNull(file.getOriginalFilename());
+        final var target = prepareTarget(tokenData, path, filename);
+
+        Path tmpFile = null;
+        try {
+            tmpFile = Files.createTempFile(depotProperties.getBaseDirectory().resolve("tmp"), "depot", "");
+            final var bytes = Files.copy(file.getInputStream(), tmpFile, StandardCopyOption.REPLACE_EXISTING);
+            final var response = store(tokenData, target, tmpFile, bytes, hash);
+            tmpFile = null; // Successfully moved, don't clean up in finally
+            return response;
+        } catch (Exception e) {
+            log.error("Could not store file {}", kv("path", target.fullPathAndFile().toString()), e);
+            throw new RuntimeException("Could not store the file. " + e.getMessage());
+        } finally {
+            // Clean up temp file if still exists (upload failed)
+            if (tmpFile != null) {
+                try {
+                    Files.deleteIfExists(tmpFile);
+                    log.debug("Deleted temporary file {}", kv("path", tmpFile.toString()));
+                } catch (IOException e) {
+                    log.error("Could not delete temporary file {}", kv("path", tmpFile.toString()), e);
+                }
+            }
+        }
+    }
+
+    /**
+     * Throws if a file with the given name cannot be stored in the given path, without storing anything.
+     */
+    public void checkPutTarget(final String path, final String filename) {
+        prepareTarget(getTokenData(), path, filename);
+    }
+
+    /**
+     * Stores an already complete file like {@link #put}. On success the temp file is moved into place;
+     * on failure it is left untouched and remains the caller's to clean up.
+     */
+    public PutFileResponseDto putFromFile(final Path tmpFile, final String path, final String filename, final boolean hash) {
+        final var tokenData = getTokenData();
+        final var target = prepareTarget(tokenData, path, filename);
+
+        try {
+            return store(tokenData, target, tmpFile, Files.size(tmpFile), hash);
+        } catch (Exception e) {
+            log.error("Could not store file {}", kv("path", target.fullPathAndFile().toString()), e);
+            throw new RuntimeException("Could not store the file. " + e.getMessage());
+        }
+    }
+
+    private record PutTarget(Path fullPath, Path fullPathAndFile) {
+    }
+
+    private PutTarget prepareTarget(final TokenData tokenData, final String path, final String filename) {
         final var normalizedPath = DepotUtil.normalizePath(path);
         final var basePath = tokenData.basePath().normalize().toAbsolutePath();
         final var fullPath = tokenData.basePath().resolve(normalizedPath).normalize().toAbsolutePath();
-        final var fullPathAndFile = fullPath.resolve(Objects.requireNonNull(file.getOriginalFilename())).normalize().toAbsolutePath();
+        final var fullPathAndFile = fullPath.resolve(filename).normalize().toAbsolutePath();
 
         // Ensure the resolved file stays within the tenant base
         if (!fullPathAndFile.startsWith(basePath)) {
@@ -159,7 +212,7 @@ public record DepotService(
 
         if (Files.isDirectory(fullPathAndFile)) {
             log.info("Rejected put because file exists as a folder {}", kv("path", fullPathAndFile.toString()));
-            throw new FileAlreadyExistsAsFolderException(file.getOriginalFilename());
+            throw new FileAlreadyExistsAsFolderException(filename);
         }
 
         try {
@@ -171,66 +224,51 @@ public record DepotService(
             throw new RuntimeException("Could not initialize folder for upload.");
         }
 
-        Path tmpFile = null;
-        try {
-            tmpFile = Files.createTempFile(depotProperties.getBaseDirectory().resolve("tmp"), "depot", "");
-            CopyOption[] options = {StandardCopyOption.REPLACE_EXISTING};
+        return new PutTarget(fullPath, fullPathAndFile);
+    }
 
-            final var bytes = Files.copy(file.getInputStream(), tmpFile, options);
+    private PutFileResponseDto store(final TokenData tokenData, final PutTarget target, final Path tmpFile, final long bytes, final boolean hash) throws IOException {
+        final var fullPath = target.fullPath();
+        final var fullPathAndFile = target.fullPathAndFile();
 
-            final var tenantConfig = depotProperties.getTenants().get(tokenData.tenant());
-            final var backup = tenantConfig != null && tenantConfig.backup();
+        final var tenantConfig = depotProperties.getTenants().get(tokenData.tenant());
+        final var backup = tenantConfig != null && tenantConfig.backup();
 
-            final var backupExisting = backup && Files.exists(fullPathAndFile);
+        final var backupExisting = backup && Files.exists(fullPathAndFile);
 
-            // Only read the file back and hash it when the result is actually needed:
-            // either the caller requested a hash, or a backup overwrite has to compare content.
-            var hashValue = "-";
-            if (hash || backupExisting) {
-                final var hash128 = MurmurHash3.hash128x64(Files.readAllBytes(tmpFile));
+        // Only read the file back and hash it when the result is actually needed:
+        // either the caller requested a hash, or a backup overwrite has to compare content.
+        var hashValue = "-";
+        if (hash || backupExisting) {
+            final var hash128 = MurmurHash3.hash128x64(Files.readAllBytes(tmpFile));
 
-                if (hash) {
-                    hashValue = String.format("%016x%016x", hash128[0], hash128[1]);
-                }
-
-                if (backupExisting) {
-                    final var existingHash128 = MurmurHash3.hash128x64(Files.readAllBytes(fullPathAndFile));
-                    if (!Arrays.equals(hash128, existingHash128)) {
-                        final var fileName = fullPathAndFile.getFileName().toString();
-                        final var backupDir = fullPath.resolve("." + fileName);
-                        Files.createDirectories(backupDir);
-                        final long existingBackups;
-                        try (var backups = Files.list(backupDir)) {
-                            existingBackups = backups.count();
-                        }
-                        final var backupFile = backupDir.resolve(fileName + "_" + (existingBackups + 1));
-                        Files.move(fullPathAndFile, backupFile, StandardCopyOption.ATOMIC_MOVE);
-                        log.info("Backed up {} {}", kv("path", fullPathAndFile.toString()), kv("target", backupFile.toString()));
-                    }
-                }
+            if (hash) {
+                hashValue = String.format("%016x%016x", hash128[0], hash128[1]);
             }
 
-            Files.move(tmpFile, fullPathAndFile, StandardCopyOption.ATOMIC_MOVE);
-            tmpFile = null; // Successfully moved, don't clean up in finally
-
-            logService.log(tokenData.tenant, LogService.EventType.PUT, tokenData.subject(), fullPathAndFile.toString());
-            log.info("Stored {} {}", kv("path", fullPathAndFile.toString()), kv("bytes", bytes));
-
-            return new PutFileResponseDto(bytes, hashValue);
-        } catch (Exception e) {
-            log.error("Could not store file {}", kv("path", fullPathAndFile.toString()), e);
-            throw new RuntimeException("Could not store the file. " + e.getMessage());
-        } finally {
-            // Clean up temp file if still exists (upload failed)
-            if (tmpFile != null) {
-                try {
-                    Files.deleteIfExists(tmpFile);
-                    log.debug("Deleted temporary file {}", kv("path", tmpFile.toString()));
-                } catch (IOException e) {
-                    log.error("Could not delete temporary file {}", kv("path", tmpFile.toString()), e);
+            if (backupExisting) {
+                final var existingHash128 = MurmurHash3.hash128x64(Files.readAllBytes(fullPathAndFile));
+                if (!Arrays.equals(hash128, existingHash128)) {
+                    final var fileName = fullPathAndFile.getFileName().toString();
+                    final var backupDir = fullPath.resolve("." + fileName);
+                    Files.createDirectories(backupDir);
+                    final long existingBackups;
+                    try (var backups = Files.list(backupDir)) {
+                        existingBackups = backups.count();
+                    }
+                    final var backupFile = backupDir.resolve(fileName + "_" + (existingBackups + 1));
+                    Files.move(fullPathAndFile, backupFile, StandardCopyOption.ATOMIC_MOVE);
+                    log.info("Backed up {} {}", kv("path", fullPathAndFile.toString()), kv("target", backupFile.toString()));
                 }
             }
         }
+
+        Files.move(tmpFile, fullPathAndFile, StandardCopyOption.ATOMIC_MOVE);
+
+        logService.log(tokenData.tenant, LogService.EventType.PUT, tokenData.subject(), fullPathAndFile.toString());
+        log.info("Stored {} {}", kv("path", fullPathAndFile.toString()), kv("bytes", bytes));
+
+        return new PutFileResponseDto(bytes, hashValue);
     }
 
     public void move(final String fromPath, final String toPath) {

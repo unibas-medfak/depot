@@ -5,6 +5,11 @@ depot:
     enabled: true
     max-attempts: 20
     window: 5m
+  upload:
+    max-size: 10GB
+    chunk-size: 8MB
+    ttl: 24h
+    max-sessions: 10
   tenants:
     default:
       password: ${DEFAULT_TENANT_PASSWORD:}
