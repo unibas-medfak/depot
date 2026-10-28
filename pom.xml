@@ -4,7 +4,7 @@
 	<parent>
 		<groupId>org.springframework.boot</groupId>
 		<artifactId>spring-boot-starter-parent</artifactId>
-		<version>4.1.2</version>
+		<version>4.2.0-RC1</version>
 		<relativePath />
 	</parent>
 	<groupId>ch.unibas.medizin</groupId>
@@ -16,10 +16,8 @@
 
 	<properties>
 		<java.version>25</java.version>
-		<json-path.version>2.9.0</json-path.version>
 		<jackson-bom.version>3.2.3</jackson-bom.version>
 		<jackson-2-bom.version>2.22.3</jackson-2-bom.version>
-		<tomcat.version>11.0.27</tomcat.version>
 		<frontend.skip>false</frontend.skip>
 		<node.version>v24.15.0</node.version>
 		<frontend-maven-plugin.version>2.0.2</frontend-maven-plugin.version>
@@ -71,7 +69,6 @@
 		<dependency>
 			<groupId>org.apache.commons</groupId>
 			<artifactId>commons-lang3</artifactId>
-			<version>3.21.0</version>
 		</dependency>
 		<dependency>
 			<groupId>org.apache.tika</groupId>
