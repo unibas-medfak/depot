@@ -73,7 +73,7 @@
 		<dependency>
 			<groupId>org.apache.tika</groupId>
 			<artifactId>tika-core</artifactId>
-			<version>4.1.0</version>
+			<version>4.2.0</version>
 		</dependency>
 		<dependency>
 			<groupId>org.jspecify</groupId>
@@ -149,7 +149,7 @@
 			<plugin>
 				<groupId>org.jacoco</groupId>
 				<artifactId>jacoco-maven-plugin</artifactId>
-				<version>0.8.15</version>
+				<version>0.8.16</version>
 				<executions>
 					<execution>
 						<goals>
